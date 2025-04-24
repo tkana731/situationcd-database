@@ -7,7 +7,7 @@ import { Box } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ProductGrid from '../components/ui/ProductGrid';
-import { getLatestProducts } from '../../lib/firebase/products';
+import { getAllProducts } from '../../lib/firebase/products';
 
 export default function ProductsPage() {
     const [products, setProducts] = useState([]);
@@ -23,7 +23,7 @@ export default function ProductsPage() {
                 setLoading(true);
 
                 // 最新の作品を20件取得
-                const productsData = await getLatestProducts(20);
+                const productsData = await getAllProducts(20);
 
                 setProducts(productsData);
 

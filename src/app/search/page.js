@@ -4,6 +4,7 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react'; // この行を追加
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ProductGrid from '../components/ui/ProductGrid';
@@ -93,11 +94,13 @@ function SearchResults() {
 
             <main className="flex-grow">
                 <div className="container mx-auto px-4 py-8">
+                    {/* SearchResults関数内でのボタン部分を以下のように変更 */}
                     <button
                         onClick={handleBack}
-                        className="mb-6 flex items-center text-gray-600 hover:text-pink-600"
+                        className="mb-6 flex items-center gap-2 px-4 py-2 bg-white text-pink-600 rounded-full shadow-md border border-pink-100 hover:bg-pink-50 hover:border-pink-200 hover:shadow-lg transition-all duration-300 group"
                     >
-                        <span className="mr-1">←</span> トップに戻る
+                        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform duration-300" />
+                        <span className="font-medium">トップに戻る</span>
                     </button>
 
                     <div className="mb-8">

@@ -2,8 +2,9 @@
 
 'use client';
 
-import { Calendar } from 'lucide-react';
+import { Calendar, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import PlaceholderImage from './PlaceholderImage';
 
 const ProductCard = ({ product }) => {
     const router = useRouter();
@@ -17,6 +18,12 @@ const ProductCard = ({ product }) => {
     const handleTagClick = (e, tag) => {
         e.stopPropagation(); // 親要素へのクリック伝播を停止
         router.push(`/search?tag=${tag}`);
+    };
+
+    // 声優クリック時の処理
+    const handleActorClick = (e, actor) => {
+        e.stopPropagation(); // 親要素へのクリック伝播を停止
+        router.push(`/search?actor=${actor}`);
     };
 
     // releaseDateの表示用フォーマット
@@ -38,25 +45,64 @@ const ProductCard = ({ product }) => {
 
     return (
         <div
-            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer flex flex-col h-full"
             onClick={handleProductClick}
         >
-            <div className="h-48 overflow-hidden relative">
-                <img
-                    src={product.thumbnailUrl || "/api/placeholder/300/200"}
-                    alt={product.title}
-                    className="w-full h-full object-cover"
-                />
+            {/* aspect-ratioを使用して画像コンテナの縦横比を固定 */}
+            <div className="relative w-full aspect-[3/2]">
+                {product.thumbnailUrl ? (
+                    <img
+                        src={product.thumbnailUrl}
+                        alt={product.title}
+                        className="absolute w-full h-full object-cover"
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'block';
+                        }}
+                    />
+                ) : (
+                    <div className="absolute w-full h-full">
+                        <PlaceholderImage width="100%" height="100%" />
+                    </div>
+                )}
+                {/* バックアップとして用意しておくプレースホルダー（デフォルトは非表示） */}
+                {product.thumbnailUrl && (
+                    <div style={{ display: 'none' }} className="absolute w-full h-full">
+                        <PlaceholderImage width="100%" height="100%" />
+                    </div>
+                )}
             </div>
-            <div className="p-4">
+            <div className="p-4 flex-grow">
                 <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.title}</h3>
                 {product.series && (
                     <p className="text-sm text-gray-600 mb-2">{product.series}</p>
                 )}
                 <div className="flex items-center text-sm text-gray-500 mb-2">
-                    <Calendar size={14} className="mr-1" />
+                    <Calendar size={14} className="mr-1 flex-shrink-0" />
                     {formatReleaseDate(product.releaseDate)}
                 </div>
+
+                {/* 声優表示部分 */}
+                {product.cast && product.cast.length > 0 && (
+                    <div className="flex items-start text-sm text-gray-500 mb-2">
+                        <User size={14} className="mr-1 mt-1 flex-shrink-0" />
+                        <div className="flex flex-wrap">
+                            {product.cast.slice(0, 2).map((actor, index) => (
+                                <span
+                                    key={index}
+                                    className="text-pink-600 hover:underline cursor-pointer mr-1"
+                                    onClick={(e) => handleActorClick(e, actor)}
+                                >
+                                    {actor}{index < Math.min(product.cast.length, 2) - 1 ? ',' : ''}
+                                </span>
+                            ))}
+                            {product.cast.length > 2 && (
+                                <span className="text-gray-500">+{product.cast.length - 2}</span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {product.tags && product.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-3">
                         {product.tags.slice(0, 3).map((tag, index) => (

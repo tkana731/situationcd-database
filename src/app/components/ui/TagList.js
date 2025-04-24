@@ -25,7 +25,7 @@ const TagList = ({ tags }) => {
                         onClick={() => handleTagClick(tag.name)}
                         className="bg-white border border-pink-200 text-gray-700 px-3 py-1.5 rounded-full hover:bg-pink-50 hover:border-pink-300 transition-colors text-sm"
                     >
-                        {tag.name} ({tag.count})
+                        #{tag.name} ({tag.count})
                     </button>
                 ))}
             </div>

@@ -91,14 +91,18 @@ export async function searchProducts(searchParams, limitCount = 50) {
                 limit(limitCount)
             );
         }
-        // キーワードで検索（現在はタイトルのみ）
+        // キーワードで検索（タイトル、メーカー、キャスト）
         else if (searchParams.q) {
             // Firestoreは完全一致しかサポートしていないため、
             // キーワード検索は簡易的な実装になっています
             const allProducts = await getAllProducts(200); // 多めに取得
             return allProducts.filter(product =>
                 product.title.toLowerCase().includes(searchParams.q.toLowerCase()) ||
-                (product.maker && product.maker.toLowerCase().includes(searchParams.q.toLowerCase()))
+                (product.maker && product.maker.toLowerCase().includes(searchParams.q.toLowerCase())) ||
+                // 声優（cast配列）の検索を追加
+                (Array.isArray(product.cast) && product.cast.some(actor =>
+                    actor.toLowerCase().includes(searchParams.q.toLowerCase())
+                ))
             ).slice(0, limitCount);
         }
         // デフォルトは新着順
