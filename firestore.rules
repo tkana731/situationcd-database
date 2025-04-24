@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 製品データは誰でも読み取り可能
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if false; // 書き込みは管理者のみ（Firebase Authと組み合わせて実装）
+    }
+    
+    // タグデータも誰でも読み取り可能
+    match /tags/{tagId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // 声優データも誰でも読み取り可能
+    match /actors/{actorId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

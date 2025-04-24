@@ -1,0 +1,194 @@
+// lib/firebase/products.js
+
+import { initializeApp } from 'firebase/app';
+import {
+    getFirestore,
+    collection,
+    getDocs,
+    getDoc,
+    doc,
+    query,
+    where,
+    orderBy,
+    limit
+} from 'firebase/firestore';
+
+// Firebaseの設定
+const firebaseConfig = {
+    // ここに既存のFirebase設定を入れてください
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+};
+
+// Firebase初期化（アプリがブラウザで実行されている場合のみ初期化）
+let app;
+let db;
+
+if (typeof window !== 'undefined') {
+    // クライアントサイドでのみ実行
+    try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+    } catch (error) {
+        console.error('Firebase initialization error:', error);
+    }
+}
+
+// 全作品を取得する関数
+export async function getAllProducts(limitCount = 50) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return [];
+    }
+
+    try {
+        const productsQuery = query(
+            collection(db, 'products'),
+            orderBy('releaseDate', 'desc'),
+            limit(limitCount)
+        );
+
+        const querySnapshot = await getDocs(productsQuery);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error getting all products:', error);
+        return [];
+    }
+}
+
+// 作品を検索する関数
+export async function searchProducts(searchParams, limitCount = 50) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return [];
+    }
+
+    try {
+        let productsQuery;
+
+        // タグで検索
+        if (searchParams.tag) {
+            productsQuery = query(
+                collection(db, 'products'),
+                where('tags', 'array-contains', searchParams.tag),
+                orderBy('releaseDate', 'desc'),
+                limit(limitCount)
+            );
+        }
+        // 声優で検索
+        else if (searchParams.actor) {
+            productsQuery = query(
+                collection(db, 'products'),
+                where('cast', 'array-contains', searchParams.actor),
+                orderBy('releaseDate', 'desc'),
+                limit(limitCount)
+            );
+        }
+        // キーワードで検索（現在はタイトルのみ）
+        else if (searchParams.q) {
+            // Firestoreは完全一致しかサポートしていないため、
+            // キーワード検索は簡易的な実装になっています
+            const allProducts = await getAllProducts(200); // 多めに取得
+            return allProducts.filter(product =>
+                product.title.toLowerCase().includes(searchParams.q.toLowerCase()) ||
+                (product.maker && product.maker.toLowerCase().includes(searchParams.q.toLowerCase()))
+            ).slice(0, limitCount);
+        }
+        // デフォルトは新着順
+        else {
+            return await getAllProducts(limitCount);
+        }
+
+        const querySnapshot = await getDocs(productsQuery);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error searching products:', error);
+        return [];
+    }
+}
+
+// IDで作品を取得する関数
+export async function getProductById(productId) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return null;
+    }
+
+    try {
+        const docRef = doc(db, 'products', productId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return {
+                id: docSnap.id,
+                ...docSnap.data()
+            };
+        } else {
+            console.log(`No product found with ID: ${productId}`);
+            return null;
+        }
+    } catch (error) {
+        console.error('Error getting product by ID:', error);
+        return null;
+    }
+}
+
+// タグ一覧を取得する関数
+export async function getAllTags(limitCount = 50) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return [];
+    }
+
+    try {
+        const tagsQuery = query(
+            collection(db, 'tags'),
+            orderBy('count', 'desc'),
+            limit(limitCount)
+        );
+
+        const querySnapshot = await getDocs(tagsQuery);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error getting all tags:', error);
+        return [];
+    }
+}
+
+// 声優一覧を取得する関数
+export async function getAllActors(limitCount = 50) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return [];
+    }
+
+    try {
+        const actorsQuery = query(
+            collection(db, 'actors'),
+            orderBy('count', 'desc'),
+            limit(limitCount)
+        );
+
+        const querySnapshot = await getDocs(actorsQuery);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error getting all actors:', error);
+        return [];
+    }
+}
