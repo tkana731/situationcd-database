@@ -9,6 +9,11 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata = {
   title: 'シチュエーションCDデータベース',
   description: '女性向けシチュエーションCDの情報サイト',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }) {

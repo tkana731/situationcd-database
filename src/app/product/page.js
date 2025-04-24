@@ -250,11 +250,11 @@ function ProductDetail() {
                                         </h2>
 
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            {/* DLsite */}
+                                            {/* DLsiteがるまに */}
                                             <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
                                                 {/* ヘッダー部分の背景色を変更 */}
                                                 <div className="bg-[#052A83] text-white p-3 flex justify-between items-center">
-                                                    <h3 className="font-bold text-lg">DLsite</h3>
+                                                    <h3 className="font-bold text-lg">DLsiteがるまに</h3>
                                                     <ExternalLink size={18} />
                                                 </div>
 
@@ -282,12 +282,12 @@ function ProductDetail() {
                                                                 rel="noopener noreferrer"
                                                                 className="block w-full bg-[#052A83] hover:bg-[#041e61] text-white text-center py-3 rounded-md transition-colors font-medium"
                                                             >
-                                                                DLsiteで購入する
+                                                                DLsiteがるまにで購入する
                                                             </a>
                                                         </>
                                                     ) : (
                                                         <div className="text-center py-8 text-gray-500">
-                                                            <p>DLsiteでの販売はありません</p>
+                                                            <p>DLsiteがるまにでの販売はありません</p>
                                                         </div>
                                                     )}
                                                 </div>

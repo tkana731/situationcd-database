@@ -513,7 +513,7 @@ export default function ProductForm({ productId }) {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                DLsite URL
+                                DLsiteがるまにURL
                             </label>
                             <input
                                 type="url"
@@ -527,7 +527,7 @@ export default function ProductForm({ productId }) {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                DLsite特典情報
+                                DLsiteがるまに特典情報
                             </label>
                             <textarea
                                 name="dlsiteBonus"

@@ -18,5 +18,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+    
+    // お問い合わせは書き込みのみ許可（読み取りは管理者のみ）
+    match /contacts/{contactId} {
+      allow read: if false; // 管理者のみ読み取り可能
+      allow create: if true; // 誰でも新規作成可能
+      allow update, delete: if false; // 更新と削除は管理者のみ
+    }
   }
 }

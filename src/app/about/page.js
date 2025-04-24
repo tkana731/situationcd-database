@@ -31,10 +31,8 @@ export default function AboutPage() {
                                 当サイトでは以下のコンテンツを中心に情報を提供しています：
                             </p>
                             <ul className="list-disc pl-6 space-y-2 text-gray-700">
-                                <li>女性向けシチュエーションCD</li>
+                                <li>シチュエーションCD</li>
                                 <li>ボイスドラマ</li>
-                                <li>キャラクターボイス作品</li>
-                                <li>音声作品全般（女性向け）</li>
                             </ul>
                         </section>
 
@@ -44,7 +42,7 @@ export default function AboutPage() {
                                 当サイトでは各作品の販売サイトへのリンクを掲載しています。リンク先は以下の公式サイトです：
                             </p>
                             <ul className="list-disc pl-6 space-y-2 text-gray-700">
-                                <li>DLsite がるまに</li>
+                                <li>DLsiteがるまに</li>
                                 <li>ポケットドラマCD</li>
                                 <li>ステラプレイヤー</li>
                             </ul>

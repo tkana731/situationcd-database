@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 円形の背景 -->
+  <circle cx="32" cy="32" r="30" fill="#fdf2f8" stroke="#ec4899" stroke-width="2" />
+  
+  <!-- CDのイメージ -->
+  <circle cx="32" cy="32" r="14" fill="#ec4899" />
+  <circle cx="32" cy="32" r="4" fill="#fdf2f8" />
+  <circle cx="32" cy="32" r="2" fill="#db2777" />
+  
+  <!-- ヘッドフォン -->
+  <path d="M12,32 C12,20.954 20.954,12 32,12 C43.046,12 52,20.954 52,32" fill="none" stroke="#db2777" stroke-width="4" stroke-linecap="round" />
+  <rect x="8" y="30" width="6" height="12" rx="2" fill="#db2777" />
+  <rect x="50" y="30" width="6" height="12" rx="2" fill="#db2777" />
+  
+  <!-- 音符 -->
+  <path d="M46,18 Q50,16 52,20 Q54,24 50,25 Q46,26 46,22 Z" fill="#ec4899" />
+  <line x1="46" y1="22" x2="46" y2="14" stroke="#ec4899" stroke-width="2" />
+</svg>
