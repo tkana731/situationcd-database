@@ -9,8 +9,9 @@ const Header = () => {
     return (
         <header className="bg-white shadow-sm border-b border-pink-100 sticky top-0 z-10">
             <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-                <Link href="/" className="font-bold text-xl md:text-2xl text-pink-600 truncate mr-2">
-                    シチュエーションCDデータベース
+                <Link href="/" className="font-bold text-xl md:text-2xl text-pink-600 mr-2">
+                    <span className="hidden sm:inline">シチュエーションCDデータベース</span>
+                    <span className="inline sm:hidden">シチュCDデータベース</span>
                 </Link>
                 <div className="flex gap-2 md:gap-4 items-center">
                     <Link href="/" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2">

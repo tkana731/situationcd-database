@@ -16,8 +16,19 @@ export default function PrivacyPage() {
                         <section className="mb-10">
                             <h2 className="text-xl font-semibold text-pink-600 mb-4">個人情報の収集について</h2>
                             <p className="text-gray-700 leading-relaxed mb-4">
-                                当サイト「シチュエーションCDデータベース」では、ユーザーの個人情報を収集していません。
-                                メールアドレスやお名前などの個人を特定できる情報の入力を求めることはありません。
+                                当サイト「シチュエーションCDデータベース」では、お問い合わせフォームを通じて以下の個人情報を収集することがあります：
+                            </p>
+                            <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-4">
+                                <li>お名前</li>
+                                <li>メールアドレス</li>
+                                <li>お問い合わせ内容</li>
+                            </ul>
+                            <p className="text-gray-700 leading-relaxed mb-4">
+                                これらの情報は、お問い合わせへの回答や、サイト改善のためにのみ利用され、ご本人の同意なく第三者に提供されることはありません。
+                            </p>
+                            <p className="text-gray-700 leading-relaxed">
+                                お問い合わせフォームはGoogleフォームを使用しており、入力された情報はGoogleのサーバーに保存されます。
+                                Googleによる個人情報の取り扱いについては、<a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:underline">Googleのプライバシーポリシー</a>をご確認ください。
                             </p>
                         </section>
 
@@ -83,8 +94,8 @@ export default function PrivacyPage() {
                         <section>
                             <h2 className="text-xl font-semibold text-pink-600 mb-4">お問い合わせ</h2>
                             <p className="text-gray-700 leading-relaxed">
-                                プライバシーポリシーに関するご質問やご意見がある場合は、お問い合わせフォームからご連絡ください。
-                                内容を確認の上、順次対応いたします。
+                                プライバシーポリシーに関するご質問やご意見がある場合は、サイト内のお問い合わせフォームからご連絡ください。
+                                お問い合わせいただいた内容を確認の上、順次対応いたします。
                             </p>
                         </section>
 
