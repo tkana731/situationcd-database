@@ -89,17 +89,26 @@ export default function AdminLayout({ children }) {
                                 <Link
                                     href="/admin/products"
                                     className={`px-3 py-2 rounded-md ${pathname === '/admin/products'
-                                            ? 'bg-blue-50 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-50'
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     作品一覧
                                 </Link>
                                 <Link
+                                    href="/admin/products/bulk-edit"
+                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/products/bulk-edit'
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    一括編集
+                                </Link>
+                                <Link
                                     href="/admin/products/new"
                                     className={`px-3 py-2 rounded-md ${pathname === '/admin/products/new'
-                                            ? 'bg-blue-50 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-50'
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     新規作品登録
