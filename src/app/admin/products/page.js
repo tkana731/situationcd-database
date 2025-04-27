@@ -38,7 +38,6 @@ export default function ProductsAdminPage() {
                     id: doc.id,
                     ...doc.data(),
                     // Firestoreのタイムスタンプを日付文字列に変換
-                    releaseDate: formatTimestamp(doc.data().releaseDate),
                     createdAt: formatTimestamp(doc.data().createdAt),
                     updatedAt: formatTimestamp(doc.data().updatedAt)
                 }));

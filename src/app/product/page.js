@@ -12,17 +12,15 @@ import { getProductById } from '../../lib/firebase/products';
 const formatDate = (dateValue) => {
     if (!dateValue) return '未定';
 
-    // Firestoreのタイムスタンプオブジェクトの場合
-    if (typeof dateValue === 'object' && dateValue.seconds) {
-        const date = new Date(dateValue.seconds * 1000);
-        return date.toLocaleDateString('ja-JP', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).replace(/\//g, '/');
+    // 文字列の場合はそのまま表示形式に変換
+    if (typeof dateValue === 'string') {
+        // YYYY-MM-DD 形式を YYYY/MM/DD 形式に変換
+        if (dateValue.includes('-')) {
+            return dateValue.replace(/-/g, '/');
+        }
+        return dateValue;
     }
 
-    // 既に文字列の場合はそのまま返す
     return dateValue;
 };
 

@@ -91,8 +91,13 @@ export default function ProductForm({ productId }) {
                     if (data.releaseDate) {
                         if (data.releaseDate instanceof Timestamp) {
                             const date = data.releaseDate.toDate();
-                            formattedReleaseDate = date.toISOString().split('T')[0]; // YYYY-MM-DD形式
+                            // yyyy-mm-dd形式の文字列に変換
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            formattedReleaseDate = `${year}-${month}-${day}`;
                         } else if (typeof data.releaseDate === 'string') {
+                            // すでに文字列の場合はそのまま使用
                             formattedReleaseDate = data.releaseDate;
                         }
                     }
@@ -300,21 +305,13 @@ export default function ProductForm({ productId }) {
                 updatedAt: serverTimestamp()
             };
 
-            // リリース日の処理
+            // リリース日の処理 - 文字列として保存
             if (product.releaseDate) {
-                try {
-                    const dateParts = product.releaseDate.split('-');
-                    if (dateParts.length === 3) {
-                        const year = parseInt(dateParts[0]);
-                        const month = parseInt(dateParts[1]) - 1; // JavaScriptの月は0から始まる
-                        const day = parseInt(dateParts[2]);
-                        productData.releaseDate = new Date(year, month, day);
-                    } else {
-                        productData.releaseDate = product.releaseDate; // 文字列のまま
-                    }
-                } catch (err) {
-                    productData.releaseDate = product.releaseDate; // 変換エラーの場合は文字列のまま
-                }
+                // フォームから取得した YYYY-MM-DD 形式の文字列をそのまま保存
+                productData.releaseDate = product.releaseDate;
+            } else {
+                // 未設定の場合は明示的に null または空文字を設定
+                productData.releaseDate = '';
             }
 
             if (isNewProduct) {
@@ -430,10 +427,11 @@ export default function ProductForm({ productId }) {
                                 発売日
                             </label>
                             <input
-                                type="date"
+                                type="text"
                                 name="releaseDate"
                                 value={product.releaseDate || ''}
                                 onChange={handleChange}
+                                placeholder="YYYY/MM/DD"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
