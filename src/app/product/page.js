@@ -269,7 +269,7 @@ function ProductDetail() {
                                                                         <p>{product.dlsiteBonus}</p>
                                                                     </div>
                                                                 ) : (
-                                                                    <p className="italic">特典情報はありません</p>
+                                                                    <p>特典情報は未登録です</p>
                                                                 )}
                                                             </div>
 
@@ -280,12 +280,12 @@ function ProductDetail() {
                                                                 rel="noopener noreferrer"
                                                                 className="block w-full bg-[#052A83] hover:bg-[#041e61] text-white text-center py-3 rounded-md transition-colors font-medium"
                                                             >
-                                                                DLsiteがるまにで購入する
+                                                                DLsiteがるまにで聴く
                                                             </a>
                                                         </>
                                                     ) : (
                                                         <div className="text-center py-8 text-gray-500">
-                                                            <p>DLsiteがるまにでの販売はありません</p>
+                                                            <p>販売情報は未登録です</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -312,7 +312,7 @@ function ProductDetail() {
                                                                         <p>{product.pocketdramaBonus}</p>
                                                                     </div>
                                                                 ) : (
-                                                                    <p className="italic">特典情報はありません</p>
+                                                                    <p>特典情報は未登録です</p>
                                                                 )}
                                                             </div>
 
@@ -323,12 +323,12 @@ function ProductDetail() {
                                                                 rel="noopener noreferrer"
                                                                 className="block w-full bg-[#3561A9] hover:bg-[#2a4e89] text-white text-center py-3 rounded-md transition-colors font-medium"
                                                             >
-                                                                ポケドラで購入する
+                                                                ポケドラで聴く
                                                             </a>
                                                         </>
                                                     ) : (
                                                         <div className="text-center py-8 text-gray-500">
-                                                            <p>ポケドラでの販売はありません</p>
+                                                            <p>販売情報は未登録です</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -355,7 +355,7 @@ function ProductDetail() {
                                                                         <p>{product.stellaplayerBonus}</p>
                                                                     </div>
                                                                 ) : (
-                                                                    <p className="italic">特典情報はありません</p>
+                                                                    <p>特典情報は未登録です</p>
                                                                 )}
                                                             </div>
 
@@ -371,7 +371,7 @@ function ProductDetail() {
                                                         </>
                                                     ) : (
                                                         <div className="text-center py-8 text-gray-500">
-                                                            <p>ステラプレイヤー非対応</p>
+                                                            <p>販売情報は未登録です</p>
                                                         </div>
                                                     )}
                                                 </div>
