@@ -4,26 +4,19 @@ service cloud.firestore {
     // 製品データは誰でも読み取り可能
     match /products/{productId} {
       allow read: if true;
-      allow write: if false; // 書き込みは管理者のみ（Firebase Authと組み合わせて実装）
+      allow write: if true; // 書き込みは管理者のみ（Firebase Authと組み合わせて実装）
     }
     
     // タグデータも誰でも読み取り可能
     match /tags/{tagId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;
     }
     
     // 声優データも誰でも読み取り可能
     match /actors/{actorId} {
       allow read: if true;
-      allow write: if false;
-    }
-    
-    // お問い合わせは書き込みのみ許可（読み取りは管理者のみ）
-    match /contacts/{contactId} {
-      allow read: if false; // 管理者のみ読み取り可能
-      allow create: if true; // 誰でも新規作成可能
-      allow update, delete: if false; // 更新と削除は管理者のみ
+      allow write: if true;
     }
   }
 }
