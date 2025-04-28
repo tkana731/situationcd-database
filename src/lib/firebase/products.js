@@ -1,4 +1,4 @@
-// lib/firebase/products.js
+// /src/lib/firebase/products.js
 
 import { initializeApp } from 'firebase/app';
 import {
@@ -121,7 +121,7 @@ export async function searchProducts(searchParams, limitCount = 50) {
     }
 }
 
-// IDで作品を取得する関数
+// IDで作品を取得する関数（特典情報も含める）
 export async function getProductById(productId) {
     if (!db) {
         console.error('Firestore not initialized');
@@ -129,18 +129,66 @@ export async function getProductById(productId) {
     }
 
     try {
+        // 作品情報を取得
         const docRef = doc(db, 'products', productId);
         const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-            return {
-                id: docSnap.id,
-                ...docSnap.data()
-            };
-        } else {
+        if (!docSnap.exists()) {
             console.log(`No product found with ID: ${productId}`);
             return null;
         }
+
+        const productData = {
+            id: docSnap.id,
+            ...docSnap.data()
+        };
+
+        // 特典情報を取得（この作品IDに関連する特典を検索）
+        const bonusesQuery = query(
+            collection(db, 'bonuses'),
+            where('relatedProducts', 'array-contains', {
+                productId: productId,
+                sites: ['dlsite', 'pocketdrama', 'stellaplayer']
+            })
+        );
+
+        // 上記のクエリではうまく動作しない可能性があるため、別の方法で特典をフィルタリング
+        const allBonusesQuery = collection(db, 'bonuses');
+        const bonusesSnapshot = await getDocs(allBonusesQuery);
+
+        // 販売サイト別の特典情報を整理
+        const bonusesBySite = {
+            dlsite: [],
+            pocketdrama: [],
+            stellaplayer: []
+        };
+
+        bonusesSnapshot.forEach(bonusDoc => {
+            const bonusData = bonusDoc.data();
+
+            // relatedProductsがあるか確認
+            if (Array.isArray(bonusData.relatedProducts)) {
+                // この製品に関連する特典であるかチェック
+                bonusData.relatedProducts.forEach(relatedProduct => {
+                    if (relatedProduct.productId === productId && Array.isArray(relatedProduct.sites)) {
+                        // 各サイトに特典を追加
+                        relatedProduct.sites.forEach(site => {
+                            if (bonusesBySite[site]) {
+                                bonusesBySite[site].push({
+                                    id: bonusDoc.id,
+                                    ...bonusData
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        return {
+            ...productData,
+            bonuses: bonusesBySite
+        };
     } catch (error) {
         console.error('Error getting product by ID:', error);
         return null;

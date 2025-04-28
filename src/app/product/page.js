@@ -1,15 +1,12 @@
-// /src/app/product/page.js
-
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Info, Tag, ExternalLink, Volume2, Gift } from 'lucide-react';
+import { ArrowLeft, Info, Tag, ExternalLink, Volume2 } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PlaceholderImage from '../components/ui/PlaceholderImage';
 import { getProductById } from '../../lib/firebase/products';
-import { getBonusesForProduct } from '../../lib/firebase/bonuses'; // 追加
 
 // 日付フォーマット関数
 const formatDate = (dateValue) => {
@@ -24,6 +21,16 @@ const formatDate = (dateValue) => {
         return dateValue;
     }
 
+    // タイムスタンプオブジェクトの場合はDate型に変換
+    if (typeof dateValue === 'object' && dateValue.seconds) {
+        const date = new Date(dateValue.seconds * 1000);
+        return date.toLocaleDateString('ja-JP', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).replace(/\//g, '/');
+    }
+
     return dateValue;
 };
 
@@ -34,7 +41,6 @@ function ProductDetail() {
     const productId = searchParams.get('id');
 
     const [product, setProduct] = useState(null);
-    const [bonuses, setBonuses] = useState([]); // 追加
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -60,14 +66,12 @@ function ProductDetail() {
                     releaseDate: formatDate(productData.releaseDate),
                     // 配列が未定義の場合に空配列を設定
                     cast: Array.isArray(productData.cast) ? productData.cast : [],
-                    tags: Array.isArray(productData.tags) ? productData.tags : []
+                    tags: Array.isArray(productData.tags) ? productData.tags : [],
+                    // 特典情報がなければ空オブジェクトを設定
+                    bonuses: productData.bonuses || {}
                 };
 
                 setProduct(processedProduct);
-
-                // 特典データの取得
-                const bonusesData = await getBonusesForProduct(productId);
-                setBonuses(bonusesData);
             } catch (error) {
                 console.error('作品詳細の取得中にエラーが発生しました:', error);
                 setError(error.message);
@@ -91,15 +95,6 @@ function ProductDetail() {
         router.push(`/search?actor=${encodeURIComponent(actor)}`);
     };
 
-    // サイト別特典の取得
-    const getSpecialBonusesForSite = (siteId) => {
-        return bonuses.filter(bonus =>
-            bonus.relatedProducts.some(rp =>
-                rp.productId === productId && rp.sites.includes(siteId)
-            )
-        );
-    };
-
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col bg-gray-50">
@@ -120,7 +115,7 @@ function ProductDetail() {
             <div className="min-h-screen flex flex-col bg-gray-50">
                 <Header />
                 <main className="flex-grow container mx-auto px-4 py-8">
-                    {/* 戻るボタンを以下のスタイリッシュなバージョンに置き換え */}
+                    {/* 戻るボタン */}
                     <button
                         onClick={handleBack}
                         className="mb-6 flex items-center gap-2 px-4 py-2 bg-white text-pink-600 rounded-full shadow-md border border-pink-100 hover:bg-pink-50 hover:border-pink-200 hover:shadow-lg transition-all duration-300 group"
@@ -141,18 +136,13 @@ function ProductDetail() {
         );
     }
 
-    // サイト別の特典情報を取得
-    const dlsiteBonuses = getSpecialBonusesForSite('dlsite');
-    const pocketdramaBonuses = getSpecialBonusesForSite('pocketdrama');
-    const stellaplayerBonuses = getSpecialBonusesForSite('stellaplayer');
-
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
 
             <main className="flex-grow">
                 <div className="container mx-auto px-4 py-8">
-                    {/* 戻るボタンを以下のスタイリッシュなバージョンに置き換え */}
+                    {/* 戻るボタン */}
                     <button
                         onClick={handleBack}
                         className="mb-6 flex items-center gap-2 px-4 py-2 bg-white text-pink-600 rounded-full shadow-md border border-pink-100 hover:bg-pink-50 hover:border-pink-200 hover:shadow-lg transition-all duration-300 group"
@@ -169,7 +159,7 @@ function ProductDetail() {
                             )}
 
                             <div className="flex flex-col md:flex-row gap-8">
-                                {/* 画像表示部分を以下のように修正 */}
+                                {/* 画像表示部分 */}
                                 <div className="md:w-1/3">
                                     {product.thumbnailUrl ? (
                                         <img
@@ -262,56 +252,7 @@ function ProductDetail() {
                                         )}
                                     </div>
 
-                                    {/* 特典情報一覧（全体） - 追加 */}
-                                    {bonuses.length > 0 && (
-                                        <div className="mb-8">
-                                            <h2 className="text-xl font-bold mb-4 flex items-center">
-                                                <Gift size={20} className="mr-2 text-pink-500" />
-                                                特典情報
-                                            </h2>
-                                            <div className="space-y-4">
-                                                {bonuses.map((bonus, index) => (
-                                                    <div key={index} className="bg-pink-50 p-4 rounded-lg border border-pink-100">
-                                                        <div className="flex items-start gap-2">
-                                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                                ${bonus.type === '購入特典' ? 'bg-green-100 text-green-800' :
-                                                                    bonus.type === '連動購入特典' ? 'bg-blue-100 text-blue-800' :
-                                                                        'bg-purple-100 text-purple-800'}`}>
-                                                                {bonus.type}
-                                                            </span>
-                                                            <h3 className="font-semibold">{bonus.name}</h3>
-                                                        </div>
-                                                        {bonus.conditions && (
-                                                            <p className="text-sm text-gray-600 mt-1">{bonus.conditions}</p>
-                                                        )}
-                                                        {bonus.castList && bonus.castList.length > 0 && (
-                                                            <p className="text-sm mt-2">
-                                                                <span className="font-medium">出演:</span> {bonus.castList.join(', ')}
-                                                            </p>
-                                                        )}
-                                                        <div className="text-sm mt-2">
-                                                            <span className="font-medium">入手可能サイト:</span>{' '}
-                                                            {bonus.relatedProducts
-                                                                .filter(rp => rp.productId === productId)
-                                                                .map(rp => (
-                                                                    rp.sites.map(site => {
-                                                                        switch (site) {
-                                                                            case 'dlsite': return 'DLsiteがるまに';
-                                                                            case 'pocketdrama': return 'ポケットドラマCD';
-                                                                            case 'stellaplayer': return 'ステラプレイヤー';
-                                                                            default: return site;
-                                                                        }
-                                                                    }).join(', ')
-                                                                ))
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* 販売情報部分（特典情報を追加） */}
+                                    {/* 販売情報部分 - 特典typeを表示するように修正 */}
                                     <div>
                                         <h2 className="text-xl font-bold mb-6 flex items-center">
                                             <ExternalLink size={20} className="mr-2 text-pink-500" />
@@ -321,7 +262,6 @@ function ProductDetail() {
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             {/* DLsiteがるまに */}
                                             <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
-                                                {/* ヘッダー部分の背景色を変更 */}
                                                 <div className="bg-[#052A83] text-white p-3 flex justify-between items-center">
                                                     <h3 className="font-bold text-lg">DLsiteがるまに</h3>
                                                     <ExternalLink size={18} />
@@ -331,35 +271,23 @@ function ProductDetail() {
                                                     {product.dlsiteUrl ? (
                                                         <>
                                                             <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
-                                                                {/* 特典情報を表示 */}
-                                                                {dlsiteBonuses.length > 0 ? (
+                                                                {product.bonuses && product.bonuses.dlsite && product.bonuses.dlsite.length > 0 ? (
                                                                     <div>
-                                                                        <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
-                                                                            <Gift size={12} className="mr-1" />
-                                                                            特典あり
-                                                                        </div>
-                                                                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                                                                            {dlsiteBonuses.map((bonus, idx) => (
-                                                                                <li key={idx} className="text-sm">
-                                                                                    {bonus.name}
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    </div>
-                                                                ) : product.dlsiteBonus ? (
-                                                                    <div>
-                                                                        <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
-                                                                            <Volume2 size={12} className="mr-1" />
-                                                                            特典
-                                                                        </div>
-                                                                        <p>{product.dlsiteBonus}</p>
+                                                                        {product.bonuses.dlsite.map((bonus, index) => (
+                                                                            <div key={index} className="mb-2">
+                                                                                <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
+                                                                                    <Volume2 size={12} className="mr-1" />
+                                                                                    {bonus.type || '特典'}
+                                                                                </div>
+                                                                                <p className="font-medium">{bonus.name}</p>
+                                                                                {bonus.conditions && <p className="text-xs">{bonus.conditions}</p>}
+                                                                            </div>
+                                                                        ))}
                                                                     </div>
                                                                 ) : (
                                                                     <p>特典情報は未登録です</p>
                                                                 )}
                                                             </div>
-
-                                                            {/* ボタンの背景色とホバー時の色を変更 */}
                                                             <a
                                                                 href={product.dlsiteUrl}
                                                                 target="_blank"
@@ -379,7 +307,6 @@ function ProductDetail() {
 
                                             {/* ポケットドラマCD */}
                                             <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
-                                                {/* ヘッダー部分の背景色を変更 */}
                                                 <div className="bg-[#3561A9] text-white p-3 flex justify-between items-center">
                                                     <h3 className="font-bold text-lg">ポケットドラマCD</h3>
                                                     <ExternalLink size={18} />
@@ -389,35 +316,23 @@ function ProductDetail() {
                                                     {product.pocketdramaUrl ? (
                                                         <>
                                                             <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
-                                                                {/* 特典情報を表示 */}
-                                                                {pocketdramaBonuses.length > 0 ? (
+                                                                {product.bonuses && product.bonuses.pocketdrama && product.bonuses.pocketdrama.length > 0 ? (
                                                                     <div>
-                                                                        <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
-                                                                            <Gift size={12} className="mr-1" />
-                                                                            特典あり
-                                                                        </div>
-                                                                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                                                                            {pocketdramaBonuses.map((bonus, idx) => (
-                                                                                <li key={idx} className="text-sm">
-                                                                                    {bonus.name}
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    </div>
-                                                                ) : product.pocketdramaBonus ? (
-                                                                    <div>
-                                                                        <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
-                                                                            <Volume2 size={12} className="mr-1" />
-                                                                            特典
-                                                                        </div>
-                                                                        <p>{product.pocketdramaBonus}</p>
+                                                                        {product.bonuses.pocketdrama.map((bonus, index) => (
+                                                                            <div key={index} className="mb-2">
+                                                                                <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
+                                                                                    <Volume2 size={12} className="mr-1" />
+                                                                                    {bonus.type || '特典'}
+                                                                                </div>
+                                                                                <p className="font-medium">{bonus.name}</p>
+                                                                                {bonus.conditions && <p className="text-xs">{bonus.conditions}</p>}
+                                                                            </div>
+                                                                        ))}
                                                                     </div>
                                                                 ) : (
                                                                     <p>特典情報は未登録です</p>
                                                                 )}
                                                             </div>
-
-                                                            {/* ボタンの背景色とホバー時の色を変更 */}
                                                             <a
                                                                 href={product.pocketdramaUrl}
                                                                 target="_blank"
@@ -437,7 +352,6 @@ function ProductDetail() {
 
                                             {/* ステラプレイヤー */}
                                             <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
-                                                {/* ヘッダー部分の背景色を変更 */}
                                                 <div className="bg-[#FF8D8D] text-white p-3 flex justify-between items-center">
                                                     <h3 className="font-bold text-lg">ステラプレイヤー</h3>
                                                     <ExternalLink size={18} />
@@ -447,35 +361,23 @@ function ProductDetail() {
                                                     {product.stellaplayerUrl ? (
                                                         <>
                                                             <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
-                                                                {/* 特典情報を表示 */}
-                                                                {stellaplayerBonuses.length > 0 ? (
+                                                                {product.bonuses && product.bonuses.stellaplayer && product.bonuses.stellaplayer.length > 0 ? (
                                                                     <div>
-                                                                        <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
-                                                                            <Gift size={12} className="mr-1" />
-                                                                            特典あり
-                                                                        </div>
-                                                                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                                                                            {stellaplayerBonuses.map((bonus, idx) => (
-                                                                                <li key={idx} className="text-sm">
-                                                                                    {bonus.name}
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    </div>
-                                                                ) : product.stellaplayerBonus ? (
-                                                                    <div>
-                                                                        <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
-                                                                            <Volume2 size={12} className="mr-1" />
-                                                                            特典
-                                                                        </div>
-                                                                        <p>{product.stellaplayerBonus}</p>
+                                                                        {product.bonuses.stellaplayer.map((bonus, index) => (
+                                                                            <div key={index} className="mb-2">
+                                                                                <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
+                                                                                    <Volume2 size={12} className="mr-1" />
+                                                                                    {bonus.type || '特典'}
+                                                                                </div>
+                                                                                <p className="font-medium">{bonus.name}</p>
+                                                                                {bonus.conditions && <p className="text-xs">{bonus.conditions}</p>}
+                                                                            </div>
+                                                                        ))}
                                                                     </div>
                                                                 ) : (
                                                                     <p>特典情報は未登録です</p>
                                                                 )}
                                                             </div>
-
-                                                            {/* ボタンの背景色とホバー時の色を変更 */}
                                                             <a
                                                                 href={product.stellaplayerUrl}
                                                                 target="_blank"
@@ -494,9 +396,9 @@ function ProductDetail() {
                                             </div>
                                         </div>
                                     </div>
-                                </div >
-                            </div >
-                        </div >
+                                </div>
+                            </div>
+                        </div>
                     </div >
                 </div >
             </main >
