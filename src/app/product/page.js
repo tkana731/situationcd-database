@@ -1,12 +1,15 @@
+// /src/app/product/page.js
+
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Info, Tag, ExternalLink, Volume2 } from 'lucide-react';
+import { ArrowLeft, Info, Tag, ExternalLink, Volume2, Gift } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PlaceholderImage from '../components/ui/PlaceholderImage';
 import { getProductById } from '../../lib/firebase/products';
+import { getBonusesForProduct } from '../../lib/firebase/bonuses'; // 追加
 
 // 日付フォーマット関数
 const formatDate = (dateValue) => {
@@ -31,6 +34,7 @@ function ProductDetail() {
     const productId = searchParams.get('id');
 
     const [product, setProduct] = useState(null);
+    const [bonuses, setBonuses] = useState([]); // 追加
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -60,6 +64,10 @@ function ProductDetail() {
                 };
 
                 setProduct(processedProduct);
+
+                // 特典データの取得
+                const bonusesData = await getBonusesForProduct(productId);
+                setBonuses(bonusesData);
             } catch (error) {
                 console.error('作品詳細の取得中にエラーが発生しました:', error);
                 setError(error.message);
@@ -81,6 +89,15 @@ function ProductDetail() {
 
     const handleActorClick = (actor) => {
         router.push(`/search?actor=${encodeURIComponent(actor)}`);
+    };
+
+    // サイト別特典の取得
+    const getSpecialBonusesForSite = (siteId) => {
+        return bonuses.filter(bonus =>
+            bonus.relatedProducts.some(rp =>
+                rp.productId === productId && rp.sites.includes(siteId)
+            )
+        );
     };
 
     if (loading) {
@@ -123,6 +140,11 @@ function ProductDetail() {
             </div>
         );
     }
+
+    // サイト別の特典情報を取得
+    const dlsiteBonuses = getSpecialBonusesForSite('dlsite');
+    const pocketdramaBonuses = getSpecialBonusesForSite('pocketdrama');
+    const stellaplayerBonuses = getSpecialBonusesForSite('stellaplayer');
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
@@ -240,7 +262,56 @@ function ProductDetail() {
                                         )}
                                     </div>
 
-                                    {/* src/app/product/page.jsの販売情報部分を以下のコードに置き換え */}
+                                    {/* 特典情報一覧（全体） - 追加 */}
+                                    {bonuses.length > 0 && (
+                                        <div className="mb-8">
+                                            <h2 className="text-xl font-bold mb-4 flex items-center">
+                                                <Gift size={20} className="mr-2 text-pink-500" />
+                                                特典情報
+                                            </h2>
+                                            <div className="space-y-4">
+                                                {bonuses.map((bonus, index) => (
+                                                    <div key={index} className="bg-pink-50 p-4 rounded-lg border border-pink-100">
+                                                        <div className="flex items-start gap-2">
+                                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                                ${bonus.type === '購入特典' ? 'bg-green-100 text-green-800' :
+                                                                    bonus.type === '連動購入特典' ? 'bg-blue-100 text-blue-800' :
+                                                                        'bg-purple-100 text-purple-800'}`}>
+                                                                {bonus.type}
+                                                            </span>
+                                                            <h3 className="font-semibold">{bonus.name}</h3>
+                                                        </div>
+                                                        {bonus.conditions && (
+                                                            <p className="text-sm text-gray-600 mt-1">{bonus.conditions}</p>
+                                                        )}
+                                                        {bonus.castList && bonus.castList.length > 0 && (
+                                                            <p className="text-sm mt-2">
+                                                                <span className="font-medium">出演:</span> {bonus.castList.join(', ')}
+                                                            </p>
+                                                        )}
+                                                        <div className="text-sm mt-2">
+                                                            <span className="font-medium">入手可能サイト:</span>{' '}
+                                                            {bonus.relatedProducts
+                                                                .filter(rp => rp.productId === productId)
+                                                                .map(rp => (
+                                                                    rp.sites.map(site => {
+                                                                        switch (site) {
+                                                                            case 'dlsite': return 'DLsiteがるまに';
+                                                                            case 'pocketdrama': return 'ポケットドラマCD';
+                                                                            case 'stellaplayer': return 'ステラプレイヤー';
+                                                                            default: return site;
+                                                                        }
+                                                                    }).join(', ')
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* 販売情報部分（特典情報を追加） */}
                                     <div>
                                         <h2 className="text-xl font-bold mb-6 flex items-center">
                                             <ExternalLink size={20} className="mr-2 text-pink-500" />
@@ -260,7 +331,22 @@ function ProductDetail() {
                                                     {product.dlsiteUrl ? (
                                                         <>
                                                             <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
-                                                                {product.dlsiteBonus ? (
+                                                                {/* 特典情報を表示 */}
+                                                                {dlsiteBonuses.length > 0 ? (
+                                                                    <div>
+                                                                        <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
+                                                                            <Gift size={12} className="mr-1" />
+                                                                            特典あり
+                                                                        </div>
+                                                                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                                                                            {dlsiteBonuses.map((bonus, idx) => (
+                                                                                <li key={idx} className="text-sm">
+                                                                                    {bonus.name}
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                ) : product.dlsiteBonus ? (
                                                                     <div>
                                                                         <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
                                                                             <Volume2 size={12} className="mr-1" />
@@ -303,7 +389,22 @@ function ProductDetail() {
                                                     {product.pocketdramaUrl ? (
                                                         <>
                                                             <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
-                                                                {product.pocketdramaBonus ? (
+                                                                {/* 特典情報を表示 */}
+                                                                {pocketdramaBonuses.length > 0 ? (
+                                                                    <div>
+                                                                        <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
+                                                                            <Gift size={12} className="mr-1" />
+                                                                            特典あり
+                                                                        </div>
+                                                                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                                                                            {pocketdramaBonuses.map((bonus, idx) => (
+                                                                                <li key={idx} className="text-sm">
+                                                                                    {bonus.name}
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                ) : product.pocketdramaBonus ? (
                                                                     <div>
                                                                         <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
                                                                             <Volume2 size={12} className="mr-1" />
@@ -346,7 +447,22 @@ function ProductDetail() {
                                                     {product.stellaplayerUrl ? (
                                                         <>
                                                             <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
-                                                                {product.stellaplayerBonus ? (
+                                                                {/* 特典情報を表示 */}
+                                                                {stellaplayerBonuses.length > 0 ? (
+                                                                    <div>
+                                                                        <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
+                                                                            <Gift size={12} className="mr-1" />
+                                                                            特典あり
+                                                                        </div>
+                                                                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                                                                            {stellaplayerBonuses.map((bonus, idx) => (
+                                                                                <li key={idx} className="text-sm">
+                                                                                    {bonus.name}
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                ) : product.stellaplayerBonus ? (
                                                                     <div>
                                                                         <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
                                                                             <Volume2 size={12} className="mr-1" />
@@ -381,8 +497,8 @@ function ProductDetail() {
                                 </div >
                             </div >
                         </div >
-                    </div>
-                </div>
+                    </div >
+                </div >
             </main >
             <Footer />
         </div >

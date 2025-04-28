@@ -1,3 +1,5 @@
+// firestore.rules
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -17,6 +19,12 @@ service cloud.firestore {
     match /actors/{actorId} {
       allow read: if true;
       allow write: if true;
+    }
+    
+    // 特典データも誰でも読み取り可能
+    match /bonuses/{bonusId} {
+      allow read: if true;
+      allow write: if true; // 書き込みは管理者のみ（Firebase Authと組み合わせて実装）
     }
   }
 }

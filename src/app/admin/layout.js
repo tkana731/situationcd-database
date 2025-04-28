@@ -1,3 +1,5 @@
+// /src/app/admin/layout.js
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -88,12 +90,21 @@ export default function AdminLayout({ children }) {
                             <nav className="ml-6 flex items-center space-x-4">
                                 <Link
                                     href="/admin/products"
-                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/products'
+                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/products' || pathname.startsWith('/admin/products/')
                                         ? 'bg-blue-50 text-blue-700'
                                         : 'text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     作品一覧
+                                </Link>
+                                <Link
+                                    href="/admin/bonuses"
+                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/bonuses' || pathname.startsWith('/admin/bonuses/')
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    特典管理
                                 </Link>
                                 <Link
                                     href="/admin/products/bulk-edit"
