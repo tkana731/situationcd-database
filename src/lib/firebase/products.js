@@ -39,18 +39,49 @@ if (typeof window !== 'undefined') {
 }
 
 // 全作品を取得する関数
-export async function getAllProducts(limitCount = 50) {
+export async function getAllProducts(limitCount = 50, sortOrder = 'latest') {
     if (!db) {
         console.error('Firestore not initialized');
         return [];
     }
 
     try {
-        const productsQuery = query(
-            collection(db, 'products'),
-            orderBy('releaseDate', 'desc'),
-            limit(limitCount)
-        );
+        let productsQuery;
+
+        // ソート順によってクエリを変更
+        switch (sortOrder) {
+            case 'latest':
+                // 登録日時の新しい順（新着順）
+                productsQuery = query(
+                    collection(db, 'products'),
+                    orderBy('createdAt', 'desc'),
+                    limit(limitCount)
+                );
+                break;
+            case 'newest':
+                // 発売日が新しい順 - releaseDate フィールドが YYYY-MM-DD 形式であることを前提
+                productsQuery = query(
+                    collection(db, 'products'),
+                    orderBy('releaseDate', 'desc'),
+                    limit(limitCount)
+                );
+                break;
+            case 'oldest':
+                // 発売日が古い順 - releaseDate フィールドが YYYY-MM-DD 形式であることを前提
+                productsQuery = query(
+                    collection(db, 'products'),
+                    orderBy('releaseDate', 'asc'),
+                    limit(limitCount)
+                );
+                break;
+            default:
+                // デフォルトは登録日時の新しい順
+                productsQuery = query(
+                    collection(db, 'products'),
+                    orderBy('createdAt', 'desc'),
+                    limit(limitCount)
+                );
+        }
 
         const querySnapshot = await getDocs(productsQuery);
         return querySnapshot.docs.map(doc => ({

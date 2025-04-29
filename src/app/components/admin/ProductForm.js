@@ -69,8 +69,9 @@ export default function ProductForm({ productId }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredBonuses, setFilteredBonuses] = useState([]);
     const [showNewBonusForm, setShowNewBonusForm] = useState(false);
+    // 新規特典フォームの初期値を変更
     const [newBonus, setNewBonus] = useState({
-        name: '',
+        name: '『』', // 初期値に『』を設定
         type: '購入特典',
         conditions: '',
         castList: [],
@@ -80,6 +81,8 @@ export default function ProductForm({ productId }) {
             stellaplayer: false
         }
     });
+
+    // handleNewBonusChange関数は変更不要
     const [castInput, setCastInput] = useState('');
     const [newBonusCastInput, setNewBonusCastInput] = useState('');
 
@@ -366,7 +369,7 @@ export default function ProductForm({ productId }) {
 
             // フォームをリセット
             setNewBonus({
-                name: '',
+                name: '『』', // 初期値に『』を設定
                 type: '購入特典',
                 conditions: '',
                 castList: [],
@@ -757,7 +760,7 @@ export default function ProductForm({ productId }) {
                                 name="releaseDate"
                                 value={product.releaseDate || ''}
                                 onChange={handleChange}
-                                placeholder="YYYY/MM/DD"
+                                placeholder="YYYY-MM-DD"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -937,6 +940,13 @@ export default function ProductForm({ productId }) {
                                                 value={newBonus.name}
                                                 onChange={handleNewBonusChange}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                ref={(input) => {
+                                                    // コンポーネントがマウントされた時にカーソルを『』の間に配置
+                                                    if (input && newBonus.name === '『』') {
+                                                        input.focus();
+                                                        input.setSelectionRange(1, 1);
+                                                    }
+                                                }}
                                                 required
                                             />
                                         </div>

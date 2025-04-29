@@ -18,14 +18,17 @@ const TagList = ({ tags }) => {
                 <Tag size={20} className="mr-2 text-pink-500" />
                 人気のタグ
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {tags.map((tag, index) => (
                     <button
                         key={index}
                         onClick={() => handleTagClick(tag.name)}
-                        className="bg-white border border-pink-200 text-gray-700 px-3 py-1.5 rounded-full hover:bg-pink-50 hover:border-pink-300 transition-colors text-sm"
+                        className="flex items-center justify-between bg-white border border-pink-200 px-4 py-3 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition-colors"
                     >
-                        #{tag.name} ({tag.count})
+                        <span className="text-pink-600">#{tag.name}</span>
+                        <span className="bg-pink-100 text-pink-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            {tag.count}
+                        </span>
                     </button>
                 ))}
             </div>

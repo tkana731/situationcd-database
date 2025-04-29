@@ -23,9 +23,12 @@ const VoiceActorList = ({ actors }) => {
                     <button
                         key={index}
                         onClick={() => handleActorClick(actor.name)}
-                        className="bg-white border border-pink-200 text-center p-2 rounded-md hover:bg-pink-50 hover:border-pink-300 transition-colors"
+                        className="flex items-center justify-between bg-white border border-pink-200 px-4 py-3 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition-colors"
                     >
-                        {actor.name}
+                        <span className="font-medium">{actor.name}</span>
+                        <span className="bg-pink-100 text-pink-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            {actor.count}
+                        </span>
                     </button>
                 ))}
             </div>

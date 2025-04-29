@@ -124,6 +124,15 @@ export default function AdminLayout({ children }) {
                                 >
                                     新規作品登録
                                 </Link>
+                                <Link
+                                    href="/admin/migration"
+                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/migration'
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    データ移行
+                                </Link>
                             </nav>
                         </div>
                         <div className="flex items-center">

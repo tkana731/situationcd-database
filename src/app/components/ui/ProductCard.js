@@ -30,7 +30,16 @@ const ProductCard = ({ product }) => {
     const formatReleaseDate = (date) => {
         if (!date) return '未定';
 
-        // dateがタイムスタンプオブジェクトの場合
+        // dateが文字列の場合
+        if (typeof date === 'string') {
+            // YYYY-MM-DD 形式を YYYY/MM/DD 形式に変換
+            if (date.includes('-')) {
+                return date.replace(/-/g, '/');
+            }
+            return date;
+        }
+
+        // dateがタイムスタンプオブジェクトの場合（念のため残しておく）
         if (typeof date === 'object' && date.seconds) {
             return new Date(date.seconds * 1000).toLocaleDateString('ja-JP', {
                 year: 'numeric',
@@ -39,7 +48,6 @@ const ProductCard = ({ product }) => {
             }).replace(/\//g, '/');
         }
 
-        // すでに文字列の場合はそのまま返す
         return date;
     };
 

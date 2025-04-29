@@ -399,7 +399,7 @@ export default function BulkEditProductsPage() {
                                 type="text"
                                 value={newProduct.releaseDate || ''}
                                 onChange={(e) => handleNewProductChange('releaseDate', e.target.value)}
-                                placeholder="YYYY/MM/DD"
+                                placeholder="YYYY-MM-DD"
                                 className="w-full px-2 py-1 border border-gray-300 rounded"
                             />
                         </div>
@@ -641,7 +641,7 @@ export default function BulkEditProductsPage() {
                                         type="text"
                                         value={product.releaseDate || ''}
                                         onChange={(e) => handleChange(index, 'releaseDate', e.target.value)}
-                                        placeholder="YYYY/MM/DD"
+                                        placeholder="YYYY-MM-DD"
                                         className="w-full px-2 py-1 border border-gray-300 rounded"
                                     />
                                 </td>
