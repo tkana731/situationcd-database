@@ -1,5 +1,3 @@
-// /src/app/components/admin/ProductForm.js
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -39,6 +37,13 @@ const firebaseConfig = {
 // Firebase初期化
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// ドキュメントIDに無効な文字を含む場合に安全な文字列に変換する関数
+const safeDocumentId = (str) => {
+    // スラッシュ(/)、ピリオド(.)、角括弧([])、二重引用符(")、アスタリスク(*)など
+    // Firestoreで使用できない文字を置き換え
+    return str.replace(/[\/\.\[\]\*"`]/g, '_');
+};
 
 export default function ProductForm({ productId }) {
     const router = useRouter();
@@ -380,121 +385,147 @@ export default function ProductForm({ productId }) {
         }
     };
 
-    // タグコレクションを更新する関数
-    const updateTagsCollection = async (oldTags, newTags) => {
+    // すべての作品からタグの出現数を集計する関数
+    const recalculateTagCounts = async () => {
         try {
+            // すべての作品を取得
+            const productsQuery = query(collection(db, 'products'));
+            const querySnapshot = await getDocs(productsQuery);
+
+            // タグごとの出現数を集計
+            const tagCounts = new Map();
+
+            querySnapshot.forEach(doc => {
+                const productData = doc.data();
+                if (productData.tags && Array.isArray(productData.tags)) {
+                    productData.tags.forEach(tag => {
+                        const count = tagCounts.get(tag) || 0;
+                        tagCounts.set(tag, count + 1);
+                    });
+                }
+            });
+
+            // タグコレクションを更新
             const batch = writeBatch(db);
 
-            // 削除されたタグの処理
-            const removedTags = oldTags.filter(tag => !newTags.includes(tag));
-            for (const tag of removedTags) {
-                const tagRef = doc(db, 'tags', tag);
-                const tagDoc = await getDoc(tagRef);
+            // まず既存のタグドキュメントを取得
+            const tagsSnapshot = await getDocs(collection(db, 'tags'));
+            const existingTags = new Set();
 
-                if (tagDoc.exists()) {
-                    const currentCount = tagDoc.data().count || 0;
-                    if (currentCount <= 1) {
-                        // カウントが1以下ならドキュメントを削除
-                        batch.delete(tagRef);
-                    } else {
-                        // カウントを減らす
-                        batch.update(tagRef, {
-                            count: increment(-1),
-                            updatedAt: serverTimestamp()
-                        });
-                    }
-                }
-            }
+            tagsSnapshot.forEach(doc => {
+                existingTags.add(doc.id);
+            });
 
-            // 追加されたタグの処理
-            const addedTags = newTags.filter(tag => !oldTags.includes(tag));
-            for (const tag of addedTags) {
-                const tagRef = doc(db, 'tags', tag);
-                const tagDoc = await getDoc(tagRef);
+            // タグカウントを更新または作成
+            for (const [tag, count] of tagCounts.entries()) {
+                const safeTagId = safeDocumentId(tag);
+                const tagRef = doc(db, 'tags', safeTagId);
 
-                if (tagDoc.exists()) {
-                    // 既存のタグならカウントを増やす
+                if (existingTags.has(safeTagId)) {
+                    // 既存のタグを更新
                     batch.update(tagRef, {
-                        count: increment(1),
+                        count: count,
+                        name: tag,
                         updatedAt: serverTimestamp()
                     });
                 } else {
-                    // 新しいタグなら作成
+                    // 新しいタグを作成
                     batch.set(tagRef, {
                         name: tag,
-                        count: 1,
+                        count: count,
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp()
                     });
                 }
+
+                // 処理済みタグを記録
+                existingTags.delete(safeTagId);
+            }
+
+            // 残りの使用されていないタグを削除
+            for (const unusedTagId of existingTags) {
+                batch.delete(doc(db, 'tags', unusedTagId));
             }
 
             // バッチ処理を実行
             await batch.commit();
-            console.log('Tags collection updated successfully');
+            console.log('All tag counts recalculated successfully');
+            return true;
         } catch (err) {
-            console.error('Error updating tags collection:', err);
-            // エラーは表示するだけで処理は継続
-            setError(prev => prev ? `${prev}、タグの更新に失敗しました` : 'タグの更新に失敗しました');
+            console.error('Error recalculating tag counts:', err);
+            return false;
         }
     };
 
-    // 声優コレクションを更新する関数
-    const updateActorsCollection = async (oldActors, newActors) => {
+    // すべての作品から声優の出現数を集計する関数
+    const recalculateActorCounts = async () => {
         try {
+            // すべての作品を取得
+            const productsQuery = query(collection(db, 'products'));
+            const querySnapshot = await getDocs(productsQuery);
+
+            // 声優ごとの出現数を集計
+            const actorCounts = new Map();
+
+            querySnapshot.forEach(doc => {
+                const productData = doc.data();
+                if (productData.cast && Array.isArray(productData.cast)) {
+                    productData.cast.forEach(actor => {
+                        const count = actorCounts.get(actor) || 0;
+                        actorCounts.set(actor, count + 1);
+                    });
+                }
+            });
+
+            // 声優コレクションを更新
             const batch = writeBatch(db);
 
-            // 削除された声優の処理
-            const removedActors = oldActors.filter(actor => !newActors.includes(actor));
-            for (const actor of removedActors) {
-                const actorRef = doc(db, 'actors', actor);
-                const actorDoc = await getDoc(actorRef);
+            // まず既存の声優ドキュメントを取得
+            const actorsSnapshot = await getDocs(collection(db, 'actors'));
+            const existingActors = new Set();
 
-                if (actorDoc.exists()) {
-                    const currentCount = actorDoc.data().count || 0;
-                    if (currentCount <= 1) {
-                        // カウントが1以下ならドキュメントを削除
-                        batch.delete(actorRef);
-                    } else {
-                        // カウントを減らす
-                        batch.update(actorRef, {
-                            count: increment(-1),
-                            updatedAt: serverTimestamp()
-                        });
-                    }
-                }
-            }
+            actorsSnapshot.forEach(doc => {
+                existingActors.add(doc.id);
+            });
 
-            // 追加された声優の処理
-            const addedActors = newActors.filter(actor => !oldActors.includes(actor));
-            for (const actor of addedActors) {
-                const actorRef = doc(db, 'actors', actor);
-                const actorDoc = await getDoc(actorRef);
+            // 声優カウントを更新または作成
+            for (const [actor, count] of actorCounts.entries()) {
+                const safeActorId = safeDocumentId(actor);
+                const actorRef = doc(db, 'actors', safeActorId);
 
-                if (actorDoc.exists()) {
-                    // 既存の声優ならカウントを増やす
+                if (existingActors.has(safeActorId)) {
+                    // 既存の声優を更新
                     batch.update(actorRef, {
-                        count: increment(1),
+                        count: count,
+                        name: actor,
                         updatedAt: serverTimestamp()
                     });
                 } else {
-                    // 新しい声優なら作成
+                    // 新しい声優を作成
                     batch.set(actorRef, {
                         name: actor,
-                        count: 1,
+                        count: count,
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp()
                     });
                 }
+
+                // 処理済み声優を記録
+                existingActors.delete(safeActorId);
+            }
+
+            // 残りの使用されていない声優を削除
+            for (const unusedActorId of existingActors) {
+                batch.delete(doc(db, 'actors', unusedActorId));
             }
 
             // バッチ処理を実行
             await batch.commit();
-            console.log('Actors collection updated successfully');
+            console.log('All actor counts recalculated successfully');
+            return true;
         } catch (err) {
-            console.error('Error updating actors collection:', err);
-            // エラーは表示するだけで処理は継続
-            setError(prev => prev ? `${prev}、声優情報の更新に失敗しました` : '声優情報の更新に失敗しました');
+            console.error('Error recalculating actor counts:', err);
+            return false;
         }
     };
 
@@ -606,8 +637,8 @@ export default function ProductForm({ productId }) {
                 await setDoc(newDocRef, productData);
 
                 // タグと声優情報を更新
-                await updateTagsCollection([], productData.tags);
-                await updateActorsCollection([], productData.cast);
+                await recalculateTagCounts();
+                await recalculateActorCounts();
 
                 // 製品IDを設定
                 actualProductId = newDocRef.id;
@@ -623,9 +654,9 @@ export default function ProductForm({ productId }) {
                 const docRef = doc(db, 'products', productId);
                 await updateDoc(docRef, productData);
 
-                // タグと声優情報を更新（差分を計算）
-                await updateTagsCollection(originalProduct.tags, productData.tags);
-                await updateActorsCollection(originalProduct.cast, productData.cast);
+                // タグと声優情報を更新
+                await recalculateTagCounts();
+                await recalculateActorCounts();
 
                 // 特典情報を更新
                 await updateBonusCollection(actualProductId);
@@ -1058,8 +1089,8 @@ export default function ProductForm({ productId }) {
                                                                     type="button"
                                                                     onClick={() => handleSelectBonus(bonus)}
                                                                     className={`px-3 py-1 rounded-md ${isSelected
-                                                                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                                                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                                                                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                                        : 'bg-blue-500 text-white hover:bg-blue-600'
                                                                         }`}
                                                                 >
                                                                     {isSelected ? '選択解除' : '選択'}

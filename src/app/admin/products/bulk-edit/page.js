@@ -22,6 +22,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// ドキュメントIDに無効な文字を含む場合に安全な文字列に変換する関数
+const safeDocumentId = (str) => {
+    // スラッシュ(/)、ピリオド(.)、角括弧([])、二重引用符(")、アスタリスク(*)など
+    // Firestoreで使用できない文字を置き換え
+    return str.replace(/[\/\.\[\]\*"`]/g, '_');
+};
+
 export default function BulkEditProductsPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -225,6 +232,64 @@ export default function BulkEditProductsPage() {
                 productData.updatedAt = serverTimestamp();
                 return updateDoc(doc(db, 'products', product.id), productData);
             });
+
+            // すべてのPromiseを実行する前に、タグと声優のデータを更新
+            // 新規タグと声優のセットを収集
+            const allNewTags = new Set();
+            const allNewActors = new Set();
+
+            // 追加・更新される製品からタグと声優を収集
+            const productsToUpdate = [...newProducts, ...editedProducts];
+            productsToUpdate.forEach(product => {
+                if (product.tags && Array.isArray(product.tags)) {
+                    product.tags.forEach(tag => allNewTags.add(tag));
+                }
+                if (product.cast && Array.isArray(product.cast)) {
+                    product.cast.forEach(actor => allNewActors.add(actor));
+                }
+            });
+
+            // タグ更新バッチを作成
+            const tagBatch = writeBatch(db);
+            for (const tag of allNewTags) {
+                const safeTagId = safeDocumentId(tag);
+                const tagRef = doc(db, 'tags', safeTagId);
+                const tagDoc = await getDoc(tagRef);
+
+                if (tagDoc.exists()) {
+                    // 既存のタグは更新しない（別の処理で行う）
+                } else {
+                    // 新しいタグを作成
+                    tagBatch.set(tagRef, {
+                        name: tag,
+                        count: 1,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                }
+            }
+            await tagBatch.commit();
+
+            // 声優更新バッチを作成
+            const actorBatch = writeBatch(db);
+            for (const actor of allNewActors) {
+                const safeActorId = safeDocumentId(actor);
+                const actorRef = doc(db, 'actors', safeActorId);
+                const actorDoc = await getDoc(actorRef);
+
+                if (actorDoc.exists()) {
+                    // 既存の声優は更新しない（別の処理で行う）
+                } else {
+                    // 新しい声優を作成
+                    actorBatch.set(actorRef, {
+                        name: actor,
+                        count: 1,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                }
+            }
+            await actorBatch.commit();
 
             // すべてのPromiseを実行
             await Promise.all([...addPromises, ...updatePromises]);
