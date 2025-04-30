@@ -2,6 +2,7 @@
 
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth'; // 認証機能を追加
 
 // 環境変数からFirebase設定を読み込む
 const firebaseConfig = {
@@ -15,13 +16,16 @@ const firebaseConfig = {
 
 // Firebase初期化（複数回初期化されないように）
 let firebaseApp;
-if (!getApps().length) {
+if (typeof window !== 'undefined' && !getApps().length) {
     firebaseApp = initializeApp(firebaseConfig);
-} else {
+} else if (typeof window !== 'undefined') {
     firebaseApp = getApps()[0];
 }
 
 // Firestoreの初期化
-const db = getFirestore(firebaseApp);
+const db = typeof window !== 'undefined' ? getFirestore(firebaseApp) : null;
 
-export { db };
+// Authenticationの初期化
+const auth = typeof window !== 'undefined' ? getAuth(firebaseApp) : null;
+
+export { db, auth, firebaseConfig };

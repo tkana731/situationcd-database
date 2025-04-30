@@ -6,6 +6,7 @@ import { ArrowLeft, Info, Tag, ExternalLink, Volume2 } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PlaceholderImage from '../components/ui/PlaceholderImage';
+import SchemaOrg from '../components/SchemaOrg'; // 追加：SchemaOrgをインポート
 import { getProductById } from '../../lib/firebase/products';
 
 // 日付フォーマット関数
@@ -138,6 +139,9 @@ function ProductDetail() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
+            {/* SchemaOrgコンポーネントを追加 */}
+            <SchemaOrg product={product} />
+
             <Header />
 
             <main className="flex-grow">

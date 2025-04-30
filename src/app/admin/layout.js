@@ -5,23 +5,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { initializeApp } from 'firebase/app';
 import Link from 'next/link';
-
-// Firebaseの設定（既存のfirebaseConfig.jsから取得する想定）
-const firebaseConfig = {
-    // ここに既存のFirebase設定を入れてください
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-};
-
-// Firebase初期化
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+import { db, auth } from '../../lib/firebase/config'; // Firebaseの設定を一元管理するために変更
 
 export default function AdminLayout({ children }) {
     const [user, setUser] = useState(null);

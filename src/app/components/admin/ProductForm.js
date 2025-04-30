@@ -2,41 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { initializeApp } from 'firebase/app';
-import {
-    getFirestore,
-    doc,
-    getDoc,
-    setDoc,
-    updateDoc,
-    serverTimestamp,
-    Timestamp,
-    collection,
-    query,
-    where,
-    getDocs,
-    increment,
-    writeBatch,
-    runTransaction
-} from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, collection, query, where, getDocs, increment, writeBatch, runTransaction } from 'firebase/firestore';
 import { getAllBonuses, addBonus } from '../../../lib/firebase/bonuses'; // addBonusを追加
 import Link from 'next/link';
 import { Gift, Search, Plus, X, Check } from 'lucide-react'; // アイコンを追加
-
-// Firebaseの設定
-const firebaseConfig = {
-    // ここに既存のFirebase設定を入れてください
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-};
-
-// Firebase初期化
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import { db, auth } from '../../../lib/firebase/config'; // 共通のFirebase設定を使用
 
 // ドキュメントIDに無効な文字を含む場合に安全な文字列に変換する関数
 const safeDocumentId = (str) => {
@@ -63,15 +33,16 @@ export default function ProductForm({ productId }) {
         stellaplayerUrl: ''
     });
 
-    // 特典情報の状態 (修正)
+    // 特典情報の状態
     const [allBonuses, setAllBonuses] = useState([]);
     const [selectedBonuses, setSelectedBonuses] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredBonuses, setFilteredBonuses] = useState([]);
-    const [showNewBonusForm, setShowNewBonusForm] = useState(false);
-    // 新規特典フォームの初期値を変更
+    const [showNewBonusForm, setShowNewBonusForm] = useState(false); // ここの状態名と下のハンドラー内の参照が一致していない
+
+    // 新規特典フォームの状態
     const [newBonus, setNewBonus] = useState({
-        name: '『』', // 初期値に『』を設定
+        name: '『』',
         type: '購入特典',
         conditions: '',
         castList: [],
@@ -82,7 +53,7 @@ export default function ProductForm({ productId }) {
         }
     });
 
-    // handleNewBonusChange関数は変更不要
+    // 入力フィールドの状態
     const [castInput, setCastInput] = useState('');
     const [newBonusCastInput, setNewBonusCastInput] = useState('');
 
@@ -322,6 +293,30 @@ export default function ProductForm({ productId }) {
                 [site]: !prev.sites[site]
             }
         }));
+    };
+
+    // 新規追加ボタンのハンドラ - 修正
+    const handleAddNewProduct = () => {
+        setShowNewBonusForm(!showNewBonusForm);  // setShowAddForm から setShowNewBonusForm に変更
+        if (!showNewBonusForm) {
+            // フォームを表示する場合、フォームデータをリセット
+            // 作品の声優情報を特典の声優に設定
+            const initialCastList = product.cast || [];
+            const initialCastInput = initialCastList.join(', ');
+
+            setNewBonus({
+                name: '『』', // 初期値に『』を設定
+                type: '購入特典',
+                conditions: '',
+                castList: initialCastList, // 作品の声優を初期値として設定
+                sites: {
+                    dlsite: false,
+                    pocketdrama: false,
+                    stellaplayer: false
+                }
+            });
+            setNewBonusCastInput(initialCastInput); // 作品の声優を文字列として設定
+        }
     };
 
     const handleNewBonusSubmit = async () => {
@@ -814,7 +809,6 @@ export default function ProductForm({ productId }) {
                             追加・削除を行うと声優一覧データも自動的に更新されます
                         </p>
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             タグ (カンマ区切りで複数入力可)
@@ -908,7 +902,7 @@ export default function ProductForm({ productId }) {
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setShowNewBonusForm(!showNewBonusForm)}
+                                    onClick={handleAddNewProduct}
                                     className="flex items-center bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
                                 >
                                     {showNewBonusForm ? (

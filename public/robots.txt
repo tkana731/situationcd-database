@@ -1,0 +1,7 @@
+# シチュエーションCDデータベース robots.txt
+User-agent: *
+Allow: /
+Disallow: /admin/
+
+# サイトマップの場所
+Sitemap: https://situationcd.com/sitemap.xml
