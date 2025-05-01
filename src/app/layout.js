@@ -36,13 +36,19 @@ export const metadata = {
     images: ['https://situationcd.com/og-image.jpg'], // OGP画像を用意してください
   },
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' }
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
+    ],
+    shortcut: '/favicon.ico',
   },
   alternates: {
     canonical: 'https://situationcd.com',
   },
+  manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({ children }) {
