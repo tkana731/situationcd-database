@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, collection, query, where, getDocs, increment, writeBatch, runTransaction } from 'firebase/firestore';
-import { getAllBonuses, addBonus } from '../../../lib/firebase/bonuses'; // addBonusを追加
+import { getAllBonuses, addBonus } from '../../../lib/firebase/bonuses';
 import Link from 'next/link';
-import { Gift, Search, Plus, X, Check } from 'lucide-react'; // アイコンを追加
-import { db, auth } from '../../../lib/firebase/config'; // 共通のFirebase設定を使用
+import { Gift, Search, Plus, X, Check, ExternalLink, Image } from 'lucide-react'; // Image アイコンを追加
+import { db, auth } from '../../../lib/firebase/config';
+import BonusSelector from './BonusSelector';
+import NewBonusForm from './NewBonusForm';
+import SelectedBonusList from './SelectedBonusList';
 
 // ドキュメントIDに無効な文字を含む場合に安全な文字列に変換する関数
 const safeDocumentId = (str) => {
@@ -15,9 +18,41 @@ const safeDocumentId = (str) => {
     return str.replace(/[\/\.\[\]\*"`]/g, '_');
 };
 
+// DLsiteの検索URLを生成する関数
+const getDLsiteSearchUrl = (title) => {
+    if (!title) return null;
+
+    // まず通常のURLエンコードを行う
+    let encodedTitle = encodeURIComponent(title);
+
+    // エンコード後の%20（スペース）を+に置換
+    encodedTitle = encodedTitle.replace(/%20/g, '+');
+
+    return `https://www.dlsite.com/girls-drama/fsr/=/language/jp/sex_category%5B0%5D/female/sex_category%5B1%5D/gay/keyword/${encodedTitle}/work_category%5B0%5D/drama/order%5B0%5D/trend/options_and_or/and/per_page/30/page/1/is_tl/1/from/fs.header`;
+};
+
+// ポケットドラマCDの検索URLを生成する関数
+const getPocketdramaSearchUrl = (title) => {
+    if (!title) return null;
+
+    // まず通常のURLエンコードを行う
+    let encodedTitle = encodeURIComponent(title);
+
+    // エンコード後の%20（スペース）を+に置換
+    encodedTitle = encodedTitle.replace(/%20/g, '+');
+
+    return `https://pokedora.com/products/list.php?pageno=&mode=search&store=adt&name=${encodedTitle}`;
+};
+
 export default function ProductForm({ productId }) {
     const router = useRouter();
     const isNewProduct = productId === 'new';
+
+    // クライアントサイドでのみ有効なDLsite検索リンク
+    const [dlsiteSearchUrl, setDlsiteSearchUrl] = useState(null);
+
+    // クライアントサイドでのみ有効なポケドラ検索リンク
+    const [pokedoraSearchUrl, setPokedoraSearchUrl] = useState(null);
 
     // 作品データの状態
     const [product, setProduct] = useState({
@@ -38,7 +73,7 @@ export default function ProductForm({ productId }) {
     const [selectedBonuses, setSelectedBonuses] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredBonuses, setFilteredBonuses] = useState([]);
-    const [showNewBonusForm, setShowNewBonusForm] = useState(false); // ここの状態名と下のハンドラー内の参照が一致していない
+    const [showNewBonusForm, setShowNewBonusForm] = useState(false);
 
     // 新規特典フォームの状態
     const [newBonus, setNewBonus] = useState({
@@ -71,11 +106,22 @@ export default function ProductForm({ productId }) {
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
 
+    // タイトルが変更されたら検索URL群を更新
+    useEffect(() => {
+        if (product.title) {
+            setDlsiteSearchUrl(getDLsiteSearchUrl(product.title));
+            setPokedoraSearchUrl(getPocketdramaSearchUrl(product.title));
+        } else {
+            setDlsiteSearchUrl(null);
+            setPokedoraSearchUrl(null);
+        }
+    }, [product.title]);
+
     // 新規追加の場合は既存データを読み込む
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 特典データの取得 (追加)
+                // 特典データの取得
                 const bonusesData = await getAllBonuses();
                 setAllBonuses(bonusesData);
                 setFilteredBonuses(bonusesData);
@@ -128,7 +174,7 @@ export default function ProductForm({ productId }) {
                         tags: [...tags]  // 配列のコピーを作成
                     });
 
-                    // 特典情報をロード (修正)
+                    // 特典情報をロード
                     if (bonusesData.length > 0) {
                         const productRelatedBonuses = bonusesData
                             .filter(bonus =>
@@ -162,23 +208,6 @@ export default function ProductForm({ productId }) {
 
         fetchData();
     }, [productId, isNewProduct]);
-
-    // 検索クエリが変更されたときにフィルタリング
-    useEffect(() => {
-        if (searchQuery.trim() === '') {
-            setFilteredBonuses(allBonuses);
-        } else {
-            const query = searchQuery.toLowerCase();
-            const filtered = allBonuses.filter(bonus =>
-                bonus.name.toLowerCase().includes(query) ||
-                (bonus.conditions && bonus.conditions.toLowerCase().includes(query)) ||
-                (Array.isArray(bonus.castList) && bonus.castList.some(cast =>
-                    cast.toLowerCase().includes(query)
-                ))
-            );
-            setFilteredBonuses(filtered);
-        }
-    }, [searchQuery, allBonuses]);
 
     // フィールド変更のハンドラ
     const handleChange = (e) => {
@@ -218,7 +247,7 @@ export default function ProductForm({ productId }) {
         });
     };
 
-    // 特典選択の処理 (修正)
+    // 特典選択の処理
     const handleSelectBonus = (bonus) => {
         // 既に選択されている場合は選択を解除
         const existingIndex = selectedBonuses.findIndex(b => b.id === bonus.id);
@@ -295,9 +324,9 @@ export default function ProductForm({ productId }) {
         }));
     };
 
-    // 新規追加ボタンのハンドラ - 修正
+    // 新規追加ボタンのハンドラ
     const handleAddNewProduct = () => {
-        setShowNewBonusForm(!showNewBonusForm);  // setShowAddForm から setShowNewBonusForm に変更
+        setShowNewBonusForm(!showNewBonusForm);
         if (!showNewBonusForm) {
             // フォームを表示する場合、フォームデータをリセット
             // 作品の声優情報を特典の声優に設定
@@ -527,7 +556,7 @@ export default function ProductForm({ productId }) {
         }
     };
 
-    // 特典コレクションの更新 (修正)
+    // 特典コレクションの更新
     const updateBonusCollection = async (actualProductId) => {
         try {
             const batch = writeBatch(db);
@@ -759,33 +788,6 @@ export default function ProductForm({ productId }) {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                サムネイル画像URL
-                            </label>
-                            <input
-                                type="url"
-                                name="thumbnailUrl"
-                                value={product.thumbnailUrl || ''}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="https://example.com/image.jpg"
-                            />
-                            {product.thumbnailUrl && (
-                                <div className="mt-2">
-                                    <img
-                                        src={product.thumbnailUrl}
-                                        alt="サムネイル"
-                                        className="h-20 w-20 object-cover rounded"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = '/api/placeholder/200/200';
-                                        }}
-                                    />
-                                </div>
-                            )}
-                        </div>
                     </div>
 
                     {/* 声優とタグ */}
@@ -833,8 +835,19 @@ export default function ProductForm({ productId }) {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
                                 DLsiteがるまにURL
+                                {dlsiteSearchUrl && (
+                                    <a
+                                        href={dlsiteSearchUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-2 inline-flex items-center text-xs text-blue-600 hover:text-blue-800"
+                                    >
+                                        <ExternalLink size={12} className="mr-1" />
+                                        DLsiteで検索
+                                    </a>
+                                )}
                             </label>
                             <input
                                 type="url"
@@ -845,12 +858,56 @@ export default function ProductForm({ productId }) {
                                 placeholder="https://www.dlsite.com/..."
                             />
                         </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                サムネイル画像URL
+                                {product.dlsiteUrl && (
+                                    <span className="ml-2 text-xs text-gray-500">
+                                        <Image size={12} className="inline mr-1" />
+                                        DLsiteから入手できます
+                                    </span>
+                                )}
+                            </label>
+                            <input
+                                type="url"
+                                name="thumbnailUrl"
+                                value={product.thumbnailUrl || ''}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="https://example.com/image.jpg"
+                            />
+                            {product.thumbnailUrl && (
+                                <div className="mt-2">
+                                    <img
+                                        src={product.thumbnailUrl}
+                                        alt="サムネイル"
+                                        className="h-20 w-20 object-cover rounded"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = '/api/placeholder/200/200';
+                                        }}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
                                 ポケットドラマCD URL
+                                {pokedoraSearchUrl && (
+                                    <a
+                                        href={pokedoraSearchUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-2 inline-flex items-center text-xs text-blue-600 hover:text-blue-800"
+                                    >
+                                        <ExternalLink size={12} className="mr-1" />
+                                        ポケドラで検索
+                                    </a>
+                                )}
                             </label>
                             <input
                                 type="url"
@@ -879,332 +936,45 @@ export default function ProductForm({ productId }) {
                         </div>
                     </div>
 
-                    {/* 特典情報管理 (修正) */}
+                    {/* 特典情報管理 */}
                     <div className="md:col-span-2">
                         <h2 className="text-lg font-semibold mb-4 pb-2 border-b">特典情報</h2>
                     </div>
 
                     <div className="md:col-span-2">
                         {/* 特典検索・新規追加部分 */}
-                        <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                            <div className="flex items-center mb-4">
-                                <div className="relative flex-grow mr-4">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Search size={16} className="text-gray-400" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="特典を検索..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleAddNewProduct}
-                                    className="flex items-center bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
-                                >
-                                    {showNewBonusForm ? (
-                                        <>
-                                            <X size={16} className="mr-1" />
-                                            キャンセル
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Plus size={16} className="mr-1" />
-                                            新規特典を追加
-                                        </>
-                                    )}
-                                </button>
-                            </div>
+                        <BonusSelector
+                            allBonuses={allBonuses}
+                            filteredBonuses={filteredBonuses}
+                            selectedBonuses={selectedBonuses}
+                            showNewBonusForm={showNewBonusForm}
+                            searchQuery={searchQuery}
+                            setSearchQuery={setSearchQuery}
+                            setFilteredBonuses={setFilteredBonuses}
+                            handleSelectBonus={handleSelectBonus}
+                            handleAddNewProduct={handleAddNewProduct}
+                        />
 
-                            {/* 新規特典フォーム */}
-                            {showNewBonusForm && (
-                                <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
-                                    <h3 className="text-lg font-medium mb-3">新規特典を追加</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                特典名 <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="name"
-                                                value={newBonus.name}
-                                                onChange={handleNewBonusChange}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                ref={(input) => {
-                                                    // コンポーネントがマウントされた時にカーソルを『』の間に配置
-                                                    if (input && newBonus.name === '『』') {
-                                                        input.focus();
-                                                        input.setSelectionRange(1, 1);
-                                                    }
-                                                }}
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                特典タイプ
-                                            </label>
-                                            <select
-                                                name="type"
-                                                value={newBonus.type}
-                                                onChange={handleNewBonusChange}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            >
-                                                <option value="購入特典">購入特典</option>
-                                                <option value="連動購入特典">連動購入特典</option>
-                                                <option value="全巻購入特典">全巻購入特典</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                入手条件
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="conditions"
-                                                value={newBonus.conditions}
-                                                onChange={handleNewBonusChange}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="例: 2023年12月31日までの期間限定"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                出演声優 (カンマ区切りで複数入力可)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={newBonusCastInput}
-                                                onChange={handleNewBonusCastChange}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="声優1, 声優2"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                入手可能なサイト <span className="text-red-500">*</span>
-                                            </label>
-                                            <div className="flex flex-wrap gap-4">
-                                                <div className="flex items-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        id="new-dlsite"
-                                                        checked={newBonus.sites.dlsite}
-                                                        onChange={() => handleNewBonusSiteToggle('dlsite')}
-                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                                    />
-                                                    <label htmlFor="new-dlsite" className="ml-2 text-sm text-gray-700">
-                                                        DLsiteがるまに
-                                                    </label>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        id="new-pocketdrama"
-                                                        checked={newBonus.sites.pocketdrama}
-                                                        onChange={() => handleNewBonusSiteToggle('pocketdrama')}
-                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                                    />
-                                                    <label htmlFor="new-pocketdrama" className="ml-2 text-sm text-gray-700">
-                                                        ポケットドラマCD
-                                                    </label>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        id="new-stellaplayer"
-                                                        checked={newBonus.sites.stellaplayer}
-                                                        onChange={() => handleNewBonusSiteToggle('stellaplayer')}
-                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                                    />
-                                                    <label htmlFor="new-stellaplayer" className="ml-2 text-sm text-gray-700">
-                                                        ステラプレイヤー
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <button
-                                            type="button"
-                                            onClick={handleNewBonusSubmit}
-                                            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                                        >
-                                            特典を追加
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 検索結果一覧 */}
-                            {!showNewBonusForm && filteredBonuses.length > 0 && (
-                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                                    <div className="max-h-48 overflow-y-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        特典名
-                                                    </th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        タイプ
-                                                    </th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        出演声優
-                                                    </th>
-                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        操作
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                {filteredBonuses.map(bonus => {
-                                                    const isSelected = selectedBonuses.some(b => b.id === bonus.id);
-                                                    return (
-                                                        <tr
-                                                            key={bonus.id}
-                                                            className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
-                                                        >
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="text-sm font-medium text-gray-900">{bonus.name}</div>
-                                                                {bonus.conditions && (
-                                                                    <div className="text-xs text-gray-500">{bonus.conditions}</div>
-                                                                )}
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                                    ${bonus.type === '購入特典' ? 'bg-green-100 text-green-800' :
-                                                                        bonus.type === '連動購入特典' ? 'bg-blue-100 text-blue-800' :
-                                                                            'bg-purple-100 text-purple-800'}`}>
-                                                                    {bonus.type}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="text-sm text-gray-500">
-                                                                    {(bonus.castList || []).join(', ')}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleSelectBonus(bonus)}
-                                                                    className={`px-3 py-1 rounded-md ${isSelected
-                                                                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                                                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                                                                        }`}
-                                                                >
-                                                                    {isSelected ? '選択解除' : '選択'}
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-
-                            {!showNewBonusForm && filteredBonuses.length === 0 && (
-                                <div className="bg-white p-6 text-center border border-gray-200 rounded-lg">
-                                    <p className="text-gray-500">検索条件に一致する特典が見つかりませんでした</p>
-                                </div>
-                            )}
-                        </div>
+                        {/* 新規特典フォーム */}
+                        {showNewBonusForm && (
+                            <NewBonusForm
+                                newBonus={newBonus}
+                                newBonusCastInput={newBonusCastInput}
+                                handleNewBonusChange={handleNewBonusChange}
+                                handleNewBonusCastChange={handleNewBonusCastChange}
+                                handleNewBonusSiteToggle={handleNewBonusSiteToggle}
+                                handleNewBonusSubmit={handleNewBonusSubmit}
+                            />
+                        )}
 
                         {/* 選択済み特典一覧 */}
-                        <div className="mb-6">
-                            <h3 className="text-md font-semibold mb-3">選択済みの特典</h3>
-
-                            {selectedBonuses.length === 0 ? (
-                                <div className="bg-white p-6 text-center border border-gray-200 rounded-lg">
-                                    <p className="text-gray-500">特典が選択されていません</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {selectedBonuses.map(bonus => (
-                                        <div key={bonus.id} className="bg-white p-4 rounded-lg border border-gray-200">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <div className="flex items-center">
-                                                        <span className="font-medium text-gray-900">{bonus.name}</span>
-                                                        <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                            ${bonus.type === '購入特典' ? 'bg-green-100 text-green-800' :
-                                                                bonus.type === '連動購入特典' ? 'bg-blue-100 text-blue-800' :
-                                                                    'bg-purple-100 text-purple-800'}`}>
-                                                            {bonus.type}
-                                                        </span>
-                                                    </div>
-                                                    {bonus.conditions && (
-                                                        <p className="text-sm text-gray-500 mt-1">{bonus.conditions}</p>
-                                                    )}
-                                                    {bonus.castList && bonus.castList.length > 0 && (
-                                                        <p className="text-sm text-gray-600 mt-1">
-                                                            <span className="font-medium">出演:</span> {bonus.castList.join(', ')}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveBonus(bonus.id)}
-                                                    className="text-red-600 hover:text-red-800"
-                                                >
-                                                    <X size={18} />
-                                                </button>
-                                            </div>
-
-                                            <div className="mt-3 pt-3 border-t border-gray-100">
-                                                <span className="text-sm font-medium text-gray-700">入手可能なサイト:</span>
-                                                <div className="flex flex-wrap gap-3 mt-2">
-                                                    <div className="flex items-center">
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`site-dlsite-${bonus.id}`}
-                                                            checked={bonus.sites.dlsite}
-                                                            onChange={() => handleBonusSiteToggle(bonus.id, 'dlsite')}
-                                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                                        />
-                                                        <label htmlFor={`site-dlsite-${bonus.id}`} className="ml-2 text-sm text-gray-700">
-                                                            DLsiteがるまに
-                                                        </label>
-                                                    </div>
-                                                    <div className="flex items-center">
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`site-pocketdrama-${bonus.id}`}
-                                                            checked={bonus.sites.pocketdrama}
-                                                            onChange={() => handleBonusSiteToggle(bonus.id, 'pocketdrama')}
-                                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                                        />
-                                                        <label htmlFor={`site-pocketdrama-${bonus.id}`} className="ml-2 text-sm text-gray-700">
-                                                            ポケットドラマCD
-                                                        </label>
-                                                    </div>
-                                                    <div className="flex items-center">
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`site-stellaplayer-${bonus.id}`}
-                                                            checked={bonus.sites.stellaplayer}
-                                                            onChange={() => handleBonusSiteToggle(bonus.id, 'stellaplayer')}
-                                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                                        />
-                                                        <label htmlFor={`site-stellaplayer-${bonus.id}`} className="ml-2 text-sm text-gray-700">
-                                                            ステラプレイヤー
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        <SelectedBonusList
+                            selectedBonuses={selectedBonuses}
+                            handleRemoveBonus={handleRemoveBonus}
+                            handleBonusSiteToggle={handleBonusSiteToggle}
+                        />
                     </div>
-                </div>
+                </div >
 
                 <div className="flex justify-end space-x-3 pt-4 border-t">
                     <button
@@ -1223,7 +993,7 @@ export default function ProductForm({ productId }) {
                         {saving ? '保存中...' : (isNewProduct ? '登録する' : '更新する')}
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 }

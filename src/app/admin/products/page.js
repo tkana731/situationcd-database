@@ -2,24 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import Link from 'next/link';
-
-// Firebaseの設定
-const firebaseConfig = {
-    // ここに既存のFirebase設定を入れてください
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-};
-
-// Firebase初期化
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import { db } from '../../../lib/firebase/config'; // 共通のFirebase設定を使用
+import { collection, getDocs, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
 
 export default function ProductsAdminPage() {
     const [products, setProducts] = useState([]);
@@ -120,26 +105,34 @@ export default function ProductsAdminPage() {
             {products.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">登録されている作品はありません</p>
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white">
+                <div className="relative overflow-auto max-w-full">
+                    <table className="w-full table-fixed border-collapse">
+                        <colgroup>
+                            <col className="w-20" />
+                            <col className="w-64 min-w-[12rem] max-w-lg" />
+                            <col className="w-32" />
+                            <col className="w-28" />
+                            <col className="w-28" />
+                            <col className="w-24" />
+                        </colgroup>
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    サムネイル
+                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    サムネ
                                 </th>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     タイトル
                                 </th>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     シリーズ
                                 </th>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    リリース日
+                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    発売日
                                 </th>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     更新日
                                 </th>
-                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     操作
                                 </th>
                             </tr>
@@ -147,32 +140,39 @@ export default function ProductsAdminPage() {
                         <tbody className="divide-y divide-gray-200">
                             {products.map((product) => (
                                 <tr key={product.id} className="hover:bg-gray-50">
-                                    <td className="py-3 px-4 whitespace-nowrap">
+                                    <td className="py-3 px-2">
                                         {product.thumbnailUrl ? (
                                             <img
                                                 src={product.thumbnailUrl}
                                                 alt={product.title}
-                                                className="h-16 w-16 object-cover rounded"
+                                                className="h-12 w-12 object-cover rounded"
                                             />
                                         ) : (
-                                            <div className="h-16 w-16 bg-gray-100 flex items-center justify-center rounded">
-                                                <span className="text-gray-400 text-xs">画像なし</span>
+                                            <div className="h-12 w-12 bg-gray-100 flex items-center justify-center rounded">
+                                                <span className="text-gray-400 text-xs">なし</span>
                                             </div>
                                         )}
                                     </td>
-                                    <td className="py-3 px-4 whitespace-nowrap">
-                                        <div className="font-medium text-gray-900">{product.title}</div>
+                                    <td className="py-3 px-2">
+                                        <div
+                                            className="text-sm font-medium text-gray-900 truncate w-full block"
+                                            title={product.title}
+                                        >
+                                            {product.title}
+                                        </div>
                                     </td>
-                                    <td className="py-3 px-4 whitespace-nowrap">
-                                        <div className="text-gray-500">{product.series || '-'}</div>
+                                    <td className="py-3 px-2">
+                                        <div className="text-sm text-gray-500 truncate w-full block" title={product.series || '-'}>
+                                            {product.series || '-'}
+                                        </div>
                                     </td>
-                                    <td className="py-3 px-4 whitespace-nowrap">
-                                        <div className="text-gray-500">{product.releaseDate || '-'}</div>
+                                    <td className="py-3 px-2 whitespace-nowrap">
+                                        <div className="text-sm text-gray-500">{product.releaseDate || '-'}</div>
                                     </td>
-                                    <td className="py-3 px-4 whitespace-nowrap">
-                                        <div className="text-gray-500">{product.updatedAt || '-'}</div>
+                                    <td className="py-3 px-2 whitespace-nowrap">
+                                        <div className="text-sm text-gray-500">{product.updatedAt || '-'}</div>
                                     </td>
-                                    <td className="py-3 px-4 whitespace-nowrap">
+                                    <td className="py-3 px-2 whitespace-nowrap">
                                         <div className="flex space-x-2">
                                             <Link
                                                 href={`/admin/products/edit?id=${product.id}`}
