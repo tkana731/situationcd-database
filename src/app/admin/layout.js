@@ -75,7 +75,7 @@ export default function AdminLayout({ children }) {
                             <nav className="ml-6 flex items-center space-x-4">
                                 <Link
                                     href="/admin/products"
-                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/products' || pathname.startsWith('/admin/products/')
+                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/products' || pathname.startsWith('/admin/products/') && !pathname.startsWith('/admin/products/import') && !pathname.startsWith('/admin/products/bulk-edit') && !pathname.startsWith('/admin/products/new')
                                         ? 'bg-blue-50 text-blue-700'
                                         : 'text-gray-600 hover:bg-gray-50'
                                         }`}
@@ -101,6 +101,15 @@ export default function AdminLayout({ children }) {
                                     一括編集
                                 </Link>
                                 <Link
+                                    href="/admin/products/import"
+                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/products/import'
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    CSVインポート
+                                </Link>
+                                <Link
                                     href="/admin/products/new"
                                     className={`px-3 py-2 rounded-md ${pathname === '/admin/products/new'
                                         ? 'bg-blue-50 text-blue-700'
@@ -110,13 +119,13 @@ export default function AdminLayout({ children }) {
                                     新規作品登録
                                 </Link>
                                 <Link
-                                    href="/admin/migration"
-                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/migration'
+                                    href="/admin/recalculate"
+                                    className={`px-3 py-2 rounded-md ${pathname === '/admin/recalculate'
                                         ? 'bg-blue-50 text-blue-700'
                                         : 'text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
-                                    データ移行
+                                    タグ・声優再集計
                                 </Link>
                             </nav>
                         </div>
