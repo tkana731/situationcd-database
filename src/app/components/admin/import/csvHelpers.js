@@ -99,11 +99,12 @@ export const normalizeUrl = (urlStr, type) => {
     if (!urlStr) return '';
 
     // DLsiteのURLを正規化
-    if (type === 'dlsiteUrl' && urlStr.includes('/work/')) {
+    if (type === 'dlsiteUrl') {
         // 相対パスの場合
         if (urlStr.startsWith('/')) {
             return `https://www.dlsite.com${urlStr}`;
         }
+        // 完全なURLの場合はそのまま返す
         return urlStr;
     }
 
@@ -124,8 +125,36 @@ export const normalizeUrl = (urlStr, type) => {
 export const generateThumbnailUrlFromDLsite = (dlsiteUrl) => {
     if (!dlsiteUrl) return '';
 
-    // 製品IDを抽出 (例: BJ242156)
-    const productIdMatch = dlsiteUrl.match(/\/product_id\/([A-Z]{2}\d+)\.html/);
+    // 複数の可能性のあるパターンをチェック
+
+    // パターン1: /product_id/XXnnnnn.html
+    let productIdMatch = dlsiteUrl.match(/\/product_id\/([A-Z]{2}\d+)\.html/);
+
+    // パターン2: /work/=/product_id/XXnnnnn/
+    if (!productIdMatch) {
+        productIdMatch = dlsiteUrl.match(/\/work\/=\/product_id\/([A-Z]{2}\d+)\//);
+    }
+
+    // パターン3: /work/=/product_id/XXnnnnn.html
+    if (!productIdMatch) {
+        productIdMatch = dlsiteUrl.match(/\/work\/=\/product_id\/([A-Z]{2}\d+)\.html/);
+    }
+
+    // パターン4: /girls-drama/work/=/product_id/XXnnnnn/
+    if (!productIdMatch) {
+        productIdMatch = dlsiteUrl.match(/\/girls-drama\/work\/=\/product_id\/([A-Z]{2}\d+)\//);
+    }
+
+    // パターン5: /girls-drama/work/=/product_id/XXnnnnn.html
+    if (!productIdMatch) {
+        productIdMatch = dlsiteUrl.match(/\/girls-drama\/work\/=\/product_id\/([A-Z]{2}\d+)\.html/);
+    }
+
+    // パターン6: dlsite.com/XXnnnnn
+    if (!productIdMatch) {
+        productIdMatch = dlsiteUrl.match(/dlsite\.com\/([A-Z]{2}\d+)/);
+    }
+
     if (!productIdMatch || !productIdMatch[1]) return '';
 
     const productId = productIdMatch[1];
@@ -136,16 +165,22 @@ export const generateThumbnailUrlFromDLsite = (dlsiteUrl) => {
     // 1000単位で切り上げた数値を計算 (例: 242156 -> 243000)
     const roundedUp = Math.ceil(numberPart / 1000) * 1000;
 
-    // サムネイルURLを生成 (例: https://img.dlsite.jp/modpub/images2/work/books/BJ243000/BJ242156_img_main.jpg)
-    return `https://img.dlsite.jp/modpub/images2/work/books/${prefix}${roundedUp}/${productId}_img_main.jpg`;
+    // サムネイルURLを生成
+    // 女性向け作品の場合（RJやBJで始まる）
+    if (prefix === 'RJ' || prefix === 'BJ') {
+        return `https://img.dlsite.jp/modpub/images2/work/books/${prefix}${roundedUp}/${productId}_img_main.jpg`;
+    } else {
+        // その他の作品
+        return `https://img.dlsite.jp/modpub/images2/work/doujin/${prefix}${roundedUp}/${productId}_img_main.jpg`;
+    }
 };
 
 // サンプルCSVのダウンロード
 export const downloadSampleCSV = () => {
     const header = 'title,series,releaseDate,maker,cast,tags,thumbnailUrl,dlsiteUrl,pocketdramaUrl,stellaplayerUrl';
     const sampleData = [
-        '催眠性指導 ～千香の記録～,催眠性指導,2023-11-10,TubeGals,速水奏,催眠,https://example.com/image1.jpg,https://example.com/dl1,https://example.com/pd1,https://example.com/sp1',
-        '蛇香のライラ ～ナミリンのハレンチな冒険～,蛇香のライラ,2023-12-05,spires,"椎名純平,紫苑ヨウ",幻想,https://example.com/image2.jpg,https://example.com/dl2,https://example.com/pd2,https://example.com/sp2'
+        '催眠性指導 ～千香の記録～,催眠性指導,2023-11-10,TubeGals,速水奏,催眠,https://example.com/image1.jpg,https://www.dlsite.com/girls-drama/work/=/product_id/BJ242156.html,https://example.com/pd1,https://example.com/sp1',
+        '蛇香のライラ ～ナミリンのハレンチな冒険～,蛇香のライラ,2023-12-05,spires,"椎名純平,紫苑ヨウ",幻想,https://example.com/image2.jpg,https://www.dlsite.com/girls-drama/work/=/product_id/BJ223344.html,https://example.com/pd2,https://example.com/sp2'
     ].join('\n');
 
     const csvContent = `${header}\n${sampleData}`;

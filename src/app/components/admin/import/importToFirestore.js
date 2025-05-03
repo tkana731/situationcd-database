@@ -85,9 +85,11 @@ export const importToFirestore = async (db, data, header, mappings, firestoreFie
                         // DLsiteのURL
                         dlsiteUrl = normalizeUrl(value, 'dlsiteUrl');
                         productData[firestoreField] = dlsiteUrl;
+                        addLog(`行 ${i + 2}: DLsiteURL設定 - ${dlsiteUrl}`);
                     } else if (firestoreField === 'thumbnailUrl') {
                         // サムネイルURL
                         productData[firestoreField] = normalizeUrl(value, 'thumbnailUrl');
+                        addLog(`行 ${i + 2}: サムネイルURL設定 - ${productData[firestoreField]}`);
                     } else {
                         // 通常の文字列フィールド
                         productData[firestoreField] = value.trim();
@@ -106,7 +108,9 @@ export const importToFirestore = async (db, data, header, mappings, firestoreFie
                 const generatedThumbnailUrl = generateThumbnailUrlFromDLsite(dlsiteUrl);
                 if (generatedThumbnailUrl) {
                     productData.thumbnailUrl = generatedThumbnailUrl;
-                    addLog(`行 ${i + 2}: DLsiteURLからサムネイル画像URLを生成しました`);
+                    addLog(`行 ${i + 2}: DLsiteURL(${dlsiteUrl})からサムネイル画像URL(${generatedThumbnailUrl})を生成しました`);
+                } else {
+                    addLog(`行 ${i + 2}: DLsiteURL(${dlsiteUrl})からサムネイル画像URLの生成に失敗しました`);
                 }
             }
 
