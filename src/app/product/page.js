@@ -2,11 +2,11 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Info, Tag, ExternalLink, Volume2 } from 'lucide-react';
+import { ArrowLeft, Info, Tag, ExternalLink, Volume2, Share2 } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PlaceholderImage from '../components/ui/PlaceholderImage';
-import SchemaOrg from '../components/SchemaOrg'; // 追加：SchemaOrgをインポート
+import SchemaOrg from '../components/SchemaOrg';
 import { getProductById } from '../../lib/firebase/products';
 
 // 日付フォーマット関数
@@ -44,6 +44,7 @@ function ProductDetail() {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [shareUrl, setShareUrl] = useState('');
 
     useEffect(() => {
         const fetchProductDetails = async () => {
@@ -73,6 +74,12 @@ function ProductDetail() {
                 };
 
                 setProduct(processedProduct);
+
+                // シェアURLを設定
+                if (typeof window !== 'undefined') {
+                    const currentUrl = window.location.href;
+                    setShareUrl(currentUrl);
+                }
             } catch (error) {
                 console.error('作品詳細の取得中にエラーが発生しました:', error);
                 setError(error.message);
@@ -94,6 +101,18 @@ function ProductDetail() {
 
     const handleActorClick = (actor) => {
         router.push(`/search?actor=${encodeURIComponent(actor)}`);
+    };
+
+    const handleShareOnX = () => {
+        if (!product) return;
+
+        const text = `${product.title} | シチュエーションCDデータベース`;
+        const url = encodeURIComponent(shareUrl);
+        const hashtags = 'シチュエーションCD,シチュCD';
+
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}&hashtags=${hashtags}`;
+
+        window.open(twitterUrl, '_blank', 'noopener,noreferrer');
     };
 
     if (loading) {
@@ -146,14 +165,25 @@ function ProductDetail() {
 
             <main className="flex-grow">
                 <div className="container mx-auto px-4 py-8">
-                    {/* 戻るボタン */}
-                    <button
-                        onClick={handleBack}
-                        className="mb-6 flex items-center gap-2 px-4 py-2 bg-white text-pink-600 rounded-full shadow-md border border-pink-100 hover:bg-pink-50 hover:border-pink-200 hover:shadow-lg transition-all duration-300 group"
-                    >
-                        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform duration-300" />
-                        <span className="font-medium">一覧に戻る</span>
-                    </button>
+                    {/* 戻るボタンとシェアボタン */}
+                    <div className="flex justify-between items-center mb-6">
+                        <button
+                            onClick={handleBack}
+                            className="flex items-center gap-2 px-4 py-2 bg-white text-pink-600 rounded-full shadow-md border border-pink-100 hover:bg-pink-50 hover:border-pink-200 hover:shadow-lg transition-all duration-300 group"
+                        >
+                            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform duration-300" />
+                            <span className="font-medium">一覧に戻る</span>
+                        </button>
+
+                        {/* シェアボタン */}
+                        <button
+                            onClick={handleShareOnX}
+                            className="flex items-center gap-2 px-4 py-2 bg-white text-[#1DA1F2] rounded-full shadow-md border border-gray-200 hover:bg-gray-50 hover:border-[#1DA1F2] hover:shadow-lg transition-all duration-300"
+                        >
+                            <Share2 size={18} />
+                            <span className="font-medium">Xでシェア</span>
+                        </button>
+                    </div>
 
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         <div className="p-6">
