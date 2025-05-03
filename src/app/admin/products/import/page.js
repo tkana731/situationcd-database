@@ -1,3 +1,5 @@
+// /src/app/admin/products/import/page.js
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -6,6 +8,21 @@ import Link from 'next/link';
 import { db } from '../../../../lib/firebase/config';
 import { collection, addDoc, serverTimestamp, writeBatch, doc, getDocs, query } from 'firebase/firestore';
 import { safeDocumentId } from '../../../../lib/firebase/helpers';
+
+// リクエストアイドル状態を確認する関数
+const requestIdleCallback =
+    typeof window !== 'undefined'
+        ? window.requestIdleCallback ||
+        ((cb) => {
+            const start = Date.now();
+            return setTimeout(() => {
+                cb({
+                    didTimeout: false,
+                    timeRemaining: () => Math.max(0, 50 - (Date.now() - start)),
+                });
+            }, 1);
+        })
+        : null;
 
 export default function ImportProductsPage() {
     const [file, setFile] = useState(null);
@@ -17,6 +34,7 @@ export default function ImportProductsPage() {
     const [logMessages, setLogMessages] = useState([]);
     const [mappings, setMappings] = useState({});
     const [selectedPreset, setSelectedPreset] = useState('custom');
+    const [mounted, setMounted] = useState(false);
     const fileInputRef = useRef(null);
     const router = useRouter();
 
@@ -35,6 +53,10 @@ export default function ImportProductsPage() {
                 'author (2)': 'cast',
                 'author (3)': 'cast',
                 'author (4)': 'cast',
+                'author (5)': 'cast',
+                'author (6)': 'cast',
+                'author (7)': 'cast',
+                'author (8)': 'cast',
                 'search_tag': 'tags',
                 'search_tag (2)': 'tags',
                 'search_tag (3)': 'tags',
@@ -45,6 +67,13 @@ export default function ImportProductsPage() {
                 'search_tag (8)': 'tags',
                 'search_tag (9)': 'tags',
                 'search_tag (10)': 'tags',
+                'search_tag (11)': 'tags',
+                'search_tag (12)': 'tags',
+                'search_tag (13)': 'tags',
+                'search_tag (14)': 'tags',
+                'search_tag (15)': 'tags',
+                'search_tag (16)': 'tags',
+                'search_tag (17)': 'tags',
                 'sales_date': 'releaseDate',
                 'work_thumb_inner href': 'dlsiteUrl'
             }
@@ -80,15 +109,37 @@ export default function ImportProductsPage() {
         { id: 'stellaplayerUrl', name: 'ステラプレイヤーURL', required: false }
     ];
 
+    // コンポーネントのマウント状態を確認
+    useEffect(() => {
+        // クライアントサイドでのみ実行するように
+        if (typeof window !== 'undefined') {
+            // マウント直後ではなく、アイドル時に状態を更新
+            if (requestIdleCallback) {
+                requestIdleCallback(() => {
+                    setMounted(true);
+                });
+            } else {
+                // requestIdleCallbackが使えない場合は少し遅延させる
+                setTimeout(() => {
+                    setMounted(true);
+                }, 100);
+            }
+        }
+    }, []);
+
     // プリセット選択時の処理
     useEffect(() => {
+        if (!mounted) return;
+
         if (selectedPreset && mappingPresets[selectedPreset]) {
             setMappings(mappingPresets[selectedPreset].mappings);
         }
-    }, [selectedPreset]);
+    }, [selectedPreset, mounted]);
 
     // CSVファイルが選択されたときの処理
     const handleFileChange = async (e) => {
+        if (!mounted) return;
+
         const selectedFile = e.target.files[0];
         setFile(selectedFile);
         setPreview({ header: [], data: [] });
@@ -143,6 +194,8 @@ export default function ImportProductsPage() {
 
     // マッピング変更処理
     const handleMappingChange = (csvColumn, firestoreField) => {
+        if (!mounted) return;
+
         setMappings(prev => ({
             ...prev,
             [csvColumn]: firestoreField
@@ -152,6 +205,11 @@ export default function ImportProductsPage() {
     // ファイル読み込み関数
     const readFileAsText = (file) => {
         return new Promise((resolve, reject) => {
+            if (!mounted) {
+                reject(new Error('コンポーネントがマウントされていません'));
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target.result);
             reader.onerror = (e) => reject(new Error('ファイルの読み込みに失敗しました'));
@@ -218,14 +276,18 @@ export default function ImportProductsPage() {
 
     // ログメッセージを追加
     const addLog = (message) => {
+        if (!mounted) return;
+
+        const timestamp = new Date().toLocaleTimeString();
         setLogMessages(prev => [
             ...prev,
-            `${new Date().toLocaleTimeString()}: ${message}`
+            `${timestamp}: ${message}`
         ]);
     };
 
     // インポート実行
     const handleImport = async () => {
+        if (!mounted) return;
         if (!file) {
             setError('CSVファイルを選択してください');
             return;
@@ -612,6 +674,8 @@ export default function ImportProductsPage() {
 
     // サンプルCSVのダウンロード
     const downloadSampleCSV = () => {
+        if (!mounted) return;
+
         const header = 'title,series,releaseDate,maker,cast,tags,thumbnailUrl,dlsiteUrl,pocketdramaUrl,stellaplayerUrl';
         const sampleData = [
             '催眠性指導 ～千香の記録～,催眠性指導,2023-11-10,TubeGals,速水奏,催眠,https://example.com/image1.jpg,https://example.com/dl1,https://example.com/pd1,https://example.com/sp1',
@@ -628,6 +692,29 @@ export default function ImportProductsPage() {
         link.click();
         document.body.removeChild(link);
     };
+
+    // サーバーサイドレンダリング用の初期表示
+    if (!mounted) {
+        return (
+            <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">CSVインポート</h1>
+                    <div className="flex space-x-2">
+                        <Link
+                            href="/admin/products"
+                            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+                        >
+                            作品一覧に戻る
+                        </Link>
+                    </div>
+                </div>
+                <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">読み込み中...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white shadow rounded-lg p-6">
