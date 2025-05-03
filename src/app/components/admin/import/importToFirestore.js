@@ -2,7 +2,7 @@
 
 import { collection, doc, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { safeDocumentId } from '../../../../lib/firebase/helpers';
-import { normalizeDateString, normalizeUrl, generateThumbnailUrlFromDLsite } from './csvHelpers';
+import { normalizeDateString, normalizeUrl } from './csvHelpers';
 
 // インポート処理
 export const importToFirestore = async (db, data, header, mappings, firestoreFields, addLog) => {
@@ -47,7 +47,6 @@ export const importToFirestore = async (db, data, header, mappings, firestoreFie
             // マッピングに基づいてデータを整形
             let hasTitle = false;
             let title = '';
-            let dlsiteUrl = ''; // DLsiteURLを保持するための変数
 
             // 各CSVカラムを対応するFirestoreフィールドに設定
             for (const csvColumn of header) {
@@ -81,11 +80,10 @@ export const importToFirestore = async (db, data, header, mappings, firestoreFie
                     } else if (firestoreField === 'releaseDate') {
                         // 日付フィールド
                         productData[firestoreField] = normalizeDateString(value);
-                    } else if (firestoreField === 'dlsiteUrl') {
-                        // DLsiteのURL
-                        dlsiteUrl = normalizeUrl(value, 'dlsiteUrl');
-                        productData[firestoreField] = dlsiteUrl;
-                        addLog(`行 ${i + 2}: DLsiteURL設定 - ${dlsiteUrl}`);
+                    } else if (firestoreField === 'dlsiteUrl' || firestoreField === 'pocketdramaUrl' || firestoreField === 'stellaplayerUrl') {
+                        // URL
+                        productData[firestoreField] = normalizeUrl(value, firestoreField);
+                        addLog(`行 ${i + 2}: ${firestoreField}設定 - ${productData[firestoreField]}`);
                     } else if (firestoreField === 'thumbnailUrl') {
                         // サムネイルURL
                         productData[firestoreField] = normalizeUrl(value, 'thumbnailUrl');
@@ -100,17 +98,6 @@ export const importToFirestore = async (db, data, header, mappings, firestoreFie
                         hasTitle = true;
                         title = value.trim();
                     }
-                }
-            }
-
-            // DLsiteURLからサムネイルURLを生成（thumbnailUrlが設定されていない場合のみ）
-            if (dlsiteUrl && (!productData.thumbnailUrl || productData.thumbnailUrl === '')) {
-                const generatedThumbnailUrl = generateThumbnailUrlFromDLsite(dlsiteUrl);
-                if (generatedThumbnailUrl) {
-                    productData.thumbnailUrl = generatedThumbnailUrl;
-                    addLog(`行 ${i + 2}: DLsiteURL(${dlsiteUrl})からサムネイル画像URL(${generatedThumbnailUrl})を生成しました`);
-                } else {
-                    addLog(`行 ${i + 2}: DLsiteURL(${dlsiteUrl})からサムネイル画像URLの生成に失敗しました`);
                 }
             }
 
