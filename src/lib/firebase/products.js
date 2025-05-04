@@ -95,11 +95,13 @@ export async function getAllProducts(limitCount = 50, sortOrder = 'latest') {
 }
 
 // 作品を検索する関数
-export async function searchProducts(searchParams, limitCount = 50) {
+export async function searchProducts(searchParams) {
     if (!db) {
         console.error('Firestore not initialized');
         return [];
     }
+
+    console.log('searchProducts called with params:', searchParams);
 
     try {
         let productsQuery;
@@ -109,8 +111,7 @@ export async function searchProducts(searchParams, limitCount = 50) {
             productsQuery = query(
                 collection(db, 'products'),
                 where('tags', 'array-contains', searchParams.tag),
-                orderBy('releaseDate', 'desc'),
-                limit(limitCount)
+                orderBy('releaseDate', 'desc')
             );
         }
         // 声優で検索
@@ -118,34 +119,50 @@ export async function searchProducts(searchParams, limitCount = 50) {
             productsQuery = query(
                 collection(db, 'products'),
                 where('cast', 'array-contains', searchParams.actor),
-                orderBy('releaseDate', 'desc'),
-                limit(limitCount)
+                orderBy('releaseDate', 'desc')
             );
         }
         // キーワードで検索（タイトル、メーカー、キャスト）
         else if (searchParams.q) {
             // Firestoreは完全一致しかサポートしていないため、
             // キーワード検索は簡易的な実装になっています
-            const allProducts = await getAllProducts(200); // 多めに取得
-            return allProducts.filter(product =>
+
+            // 全件を取得（limitなし）
+            const allProductsQuery = query(
+                collection(db, 'products'),
+                orderBy('createdAt', 'desc')
+            );
+            const querySnapshot = await getDocs(allProductsQuery);
+            const allProducts = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            const filteredResults = allProducts.filter(product =>
                 product.title.toLowerCase().includes(searchParams.q.toLowerCase()) ||
                 (product.maker && product.maker.toLowerCase().includes(searchParams.q.toLowerCase())) ||
                 // 声優（cast配列）の検索を追加
                 (Array.isArray(product.cast) && product.cast.some(actor =>
                     actor.toLowerCase().includes(searchParams.q.toLowerCase())
                 ))
-            ).slice(0, limitCount);
+            );
+
+            return filteredResults;
         }
         // デフォルトは新着順
         else {
-            return await getAllProducts(limitCount);
+            return await getAllProducts();
         }
 
         const querySnapshot = await getDocs(productsQuery);
-        return querySnapshot.docs.map(doc => ({
+        const allResults = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         }));
+
+        console.log('Query results length:', allResults.length);
+
+        return allResults;
     } catch (error) {
         console.error('Error searching products:', error);
         return [];
