@@ -58,7 +58,7 @@ const Header = () => {
                             className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2"
                         >
                             <Calendar size={18} />
-                            <span className="hidden md:inline">発売年</span>
+                            <span className="hidden md:inline">発売日</span>
                             <ChevronDown size={14} className={`transform transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
 

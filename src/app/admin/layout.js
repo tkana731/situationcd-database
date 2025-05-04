@@ -1,12 +1,12 @@
-// /src/app/admin/layout.js
+// src/app/admin/layout.js
 
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import Link from 'next/link';
-import { db, auth } from '../../lib/firebase/config'; // Firebaseの設定を一元管理するために変更
+import { auth } from '../../lib/firebase/config';
 import { ChevronDown } from 'lucide-react';
 
 export default function AdminLayout({ children }) {
@@ -14,15 +14,19 @@ export default function AdminLayout({ children }) {
     const [loading, setLoading] = useState(true);
     const [productDropdownOpen, setProductDropdownOpen] = useState(false);
     const [dataDropdownOpen, setDataDropdownOpen] = useState(false);
+    const [migrationDropdownOpen, setMigrationDropdownOpen] = useState(false);
+    const [isDropdownMounted, setIsDropdownMounted] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
+        // クライアントサイドでのみドロップダウンを有効化
+        setIsDropdownMounted(true);
+
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
             setLoading(false);
 
-            // ログインしていない場合、ログインページ以外にアクセスしようとした場合はリダイレクト
             if (!currentUser && pathname !== '/admin') {
                 router.push('/admin');
             }
@@ -31,22 +35,27 @@ export default function AdminLayout({ children }) {
         return () => unsubscribe();
     }, [router, pathname]);
 
-    // ドロップダウンの外側をクリックしたときに閉じる
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (productDropdownOpen || dataDropdownOpen) {
-                if (!event.target.closest('.dropdown-menu')) {
+            if (!isDropdownMounted) return;
+
+            if (productDropdownOpen || dataDropdownOpen || migrationDropdownOpen) {
+                if (!event.target?.closest('.dropdown-menu')) {
                     setProductDropdownOpen(false);
                     setDataDropdownOpen(false);
+                    setMigrationDropdownOpen(false);
                 }
             }
         };
 
-        document.addEventListener('click', handleClickOutside);
+        if (isDropdownMounted) {
+            document.addEventListener('click', handleClickOutside);
+        }
+
         return () => {
             document.removeEventListener('click', handleClickOutside);
         };
-    }, [productDropdownOpen, dataDropdownOpen]);
+    }, [productDropdownOpen, dataDropdownOpen, migrationDropdownOpen, isDropdownMounted]);
 
     const handleLogout = async () => {
         try {
@@ -61,12 +70,21 @@ export default function AdminLayout({ children }) {
         e.stopPropagation();
         setProductDropdownOpen(!productDropdownOpen);
         if (dataDropdownOpen) setDataDropdownOpen(false);
+        if (migrationDropdownOpen) setMigrationDropdownOpen(false);
     };
 
     const toggleDataDropdown = (e) => {
         e.stopPropagation();
         setDataDropdownOpen(!dataDropdownOpen);
         if (productDropdownOpen) setProductDropdownOpen(false);
+        if (migrationDropdownOpen) setMigrationDropdownOpen(false);
+    };
+
+    const toggleMigrationDropdown = (e) => {
+        e.stopPropagation();
+        setMigrationDropdownOpen(!migrationDropdownOpen);
+        if (productDropdownOpen) setProductDropdownOpen(false);
+        if (dataDropdownOpen) setDataDropdownOpen(false);
     };
 
     // ログインページならレイアウトなしでコンテンツを表示
@@ -88,7 +106,7 @@ export default function AdminLayout({ children }) {
 
     // 未認証
     if (!user) {
-        return null; // useEffectでリダイレクトするのでここは表示されない
+        return null;
     }
 
     // 作品関連のパスかどうかをチェック
@@ -99,11 +117,16 @@ export default function AdminLayout({ children }) {
             path.startsWith('/admin/bonuses/');
     };
 
-    // データ関連のパスかどうかをチェック
+    // データ関連のパスかどうかをチェック  
     const isDataRelatedPath = (path) => {
         return path === '/admin/recalculate' ||
             path === '/admin/products/bulk-edit' ||
             path === '/admin/products/import';
+    };
+
+    // マイグレーション関連のパスかどうかをチェック
+    const isMigrationRelatedPath = (path) => {
+        return path.startsWith('/admin/migration/');
     };
 
     // 認証済み：管理画面レイアウトを表示
@@ -123,7 +146,7 @@ export default function AdminLayout({ children }) {
                                 {/* 作品管理ドロップダウン */}
                                 <div className="relative dropdown-menu">
                                     <button
-                                        onClick={toggleProductDropdown}
+                                        onClick={isDropdownMounted ? toggleProductDropdown : undefined}
                                         className={`px-3 py-2 rounded-md flex items-center ${isProductRelatedPath(pathname) ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
                                             }`}
                                     >
@@ -131,7 +154,7 @@ export default function AdminLayout({ children }) {
                                         <ChevronDown size={16} className={`ml-1 transition-transform ${productDropdownOpen ? 'rotate-180' : ''}`} />
                                     </button>
 
-                                    {productDropdownOpen && (
+                                    {isDropdownMounted && productDropdownOpen && (
                                         <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 py-1">
                                             <Link
                                                 href="/admin/products"
@@ -164,7 +187,7 @@ export default function AdminLayout({ children }) {
                                 {/* データ管理ドロップダウン */}
                                 <div className="relative dropdown-menu">
                                     <button
-                                        onClick={toggleDataDropdown}
+                                        onClick={isDropdownMounted ? toggleDataDropdown : undefined}
                                         className={`px-3 py-2 rounded-md flex items-center ${isDataRelatedPath(pathname) ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
                                             }`}
                                     >
@@ -172,7 +195,7 @@ export default function AdminLayout({ children }) {
                                         <ChevronDown size={16} className={`ml-1 transition-transform ${dataDropdownOpen ? 'rotate-180' : ''}`} />
                                     </button>
 
-                                    {dataDropdownOpen && (
+                                    {isDropdownMounted && dataDropdownOpen && (
                                         <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 py-1">
                                             <Link
                                                 href="/admin/products/bulk-edit"
@@ -197,6 +220,31 @@ export default function AdminLayout({ children }) {
                                                 onClick={() => setDataDropdownOpen(false)}
                                             >
                                                 タグ・声優再集計
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* マイグレーションドロップダウン */}
+                                <div className="relative dropdown-menu">
+                                    <button
+                                        onClick={isDropdownMounted ? toggleMigrationDropdown : undefined}
+                                        className={`px-3 py-2 rounded-md flex items-center ${isMigrationRelatedPath(pathname) ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        マイグレーション
+                                        <ChevronDown size={16} className={`ml-1 transition-transform ${migrationDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {isDropdownMounted && migrationDropdownOpen && (
+                                        <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 py-1">
+                                            <Link
+                                                href="/admin/migration/dlsite-thumbnails"
+                                                className={`block px-4 py-2 text-sm ${pathname === '/admin/migration/dlsite-thumbnails' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                                                    }`}
+                                                onClick={() => setMigrationDropdownOpen(false)}
+                                            >
+                                                DLsiteサムネイル生成
                                             </Link>
                                         </div>
                                     )}
