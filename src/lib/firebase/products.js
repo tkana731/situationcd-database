@@ -10,7 +10,9 @@ import {
     query,
     where,
     orderBy,
-    limit
+    limit,
+    startAt,
+    endAt
 } from 'firebase/firestore';
 
 // Firebaseの設定
@@ -90,6 +92,35 @@ export async function getAllProducts(limitCount = 50, sortOrder = 'latest') {
         }));
     } catch (error) {
         console.error('Error getting all products:', error);
+        return [];
+    }
+}
+
+// 特定の年の作品を取得する関数
+export async function getProductsByYear(year) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return [];
+    }
+
+    try {
+        const startDate = `${year}-01-01`;
+        const endDate = `${year}-12-31`;
+
+        const productsQuery = query(
+            collection(db, 'products'),
+            where('releaseDate', '>=', startDate),
+            where('releaseDate', '<=', endDate),
+            orderBy('releaseDate', 'asc')
+        );
+
+        const querySnapshot = await getDocs(productsQuery);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error getting products by year:', error);
         return [];
     }
 }
