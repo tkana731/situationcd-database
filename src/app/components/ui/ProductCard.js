@@ -23,7 +23,8 @@ const ProductCard = ({ product }) => {
     // 声優クリック時の処理
     const handleActorClick = (e, actor) => {
         e.stopPropagation(); // 親要素へのクリック伝播を停止
-        router.push(`/search?actor=${actor}`);
+        // 検索ページではなく、声優専用ページにリダイレクト
+        router.push(`/actor/${encodeURIComponent(actor)}`);
     };
 
     // releaseDateの表示用フォーマット

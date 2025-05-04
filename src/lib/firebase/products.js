@@ -1,6 +1,6 @@
 // /src/lib/firebase/products.js
 
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import {
     getFirestore,
     collection,
@@ -17,7 +17,6 @@ import {
 
 // Firebaseの設定
 const firebaseConfig = {
-    // ここに既存のFirebase設定を入れてください
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -26,18 +25,20 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Firebase初期化（アプリがブラウザで実行されている場合のみ初期化）
+// Firebase初期化（サーバーとクライアントの両方で動作するように）
 let app;
 let db;
 
-if (typeof window !== 'undefined') {
-    // クライアントサイドでのみ実行
-    try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-    } catch (error) {
-        console.error('Firebase initialization error:', error);
-    }
+if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+} else {
+    app = getApps()[0];
+}
+
+try {
+    db = getFirestore(app);
+} catch (error) {
+    console.error('Firebase initialization error:', error);
 }
 
 // 全作品を取得する関数

@@ -32,7 +32,8 @@ export default function ActorsPage() {
     }, []);
 
     const handleActorClick = (actorName) => {
-        router.push(`/search?actor=${encodeURIComponent(actorName)}`);
+        // 検索ページではなく、声優専用ページにリダイレクト
+        router.push(`/actor/${encodeURIComponent(actorName)}`);
     };
 
     return (
