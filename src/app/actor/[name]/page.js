@@ -7,12 +7,16 @@ import { getAllActors } from '../../../lib/firebase/products';
 
 // 静的パスを生成する関数
 export async function generateStaticParams() {
-    // 実際の声優データを取得
+    // ビルド時のみ実行（開発環境では空配列を返す）
+    if (process.env.NODE_ENV !== 'production') {
+        return [];
+    }
+
     try {
         const actors = await getAllActors();
 
         return actors.map(actor => ({
-            name: encodeURIComponent(actor.name)
+            name: actor.name  // URLエンコードはNext.jsが自動で行う
         }));
     } catch (error) {
         console.error('Error fetching actors for static params:', error);
@@ -23,10 +27,6 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
     const resolvedParams = await params;
     const actorName = decodeURIComponent(resolvedParams.name);
-
-    // プリレンダリング時にFirebaseが初期化されていない可能性があるため、
-    // デフォルト値を使用
-    const defaultProductCount = 0;
 
     return {
         title: `${actorName}の出演作品一覧 | シチュエーションCDデータベース`,
