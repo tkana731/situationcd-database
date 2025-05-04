@@ -18,8 +18,8 @@ export default function TagsPage() {
         const fetchTags = async () => {
             try {
                 setLoading(true);
-                // タグを取得する（制限を増やして多くのタグを表示）
-                const tagsData = await getAllTags(100);
+                // タグを取得する（制限を大幅に増やして全てのタグを表示）
+                const tagsData = await getAllTags();
                 setTags(tagsData);
             } catch (error) {
                 console.error('タグデータの取得中にエラーが発生しました:', error);

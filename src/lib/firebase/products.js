@@ -275,7 +275,7 @@ export async function getProductById(productId) {
 }
 
 // タグ一覧を取得する関数
-export async function getAllTags(limitCount = 50) {
+export async function getAllTags(limitCount = 9999) {
     if (!db) {
         console.error('Firestore not initialized');
         return [];
@@ -300,7 +300,7 @@ export async function getAllTags(limitCount = 50) {
 }
 
 // 声優一覧を取得する関数
-export async function getAllActors(limitCount = 50) {
+export async function getAllActors(limitCount = 9999) {
     if (!db) {
         console.error('Firestore not initialized');
         return [];

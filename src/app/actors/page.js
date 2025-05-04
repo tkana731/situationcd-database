@@ -18,8 +18,8 @@ export default function ActorsPage() {
         const fetchActors = async () => {
             try {
                 setLoading(true);
-                // 声優データを取得する（制限を増やして多くの声優を表示）
-                const actorsData = await getAllActors(100);
+                // 声優データを取得する（制限を大幅に増やして全ての声優を表示）
+                const actorsData = await getAllActors();
                 setActors(actorsData);
             } catch (error) {
                 console.error('声優データの取得中にエラーが発生しました:', error);
