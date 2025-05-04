@@ -1,4 +1,4 @@
-// /src/app/year/[year]/page.js
+// src/app/year/[year]/page.js
 
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
@@ -19,9 +19,22 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
     const resolvedParams = await params;
 
+    // プリレンダリング時にFirebaseが初期化されていない可能性があるため、
+    // デフォルト値を使用
+    const defaultProductCount = 0;
+
     return {
         title: `${resolvedParams.year}年の作品一覧 | シチュエーションCDデータベース`,
         description: `${resolvedParams.year}年に発売されたシチュエーションCDの一覧です。`,
+        keywords: `シチュエーションCD,${resolvedParams.year}年,発売作品,ドラマCD,女性向け`,
+        openGraph: {
+            title: `${resolvedParams.year}年の作品一覧`,
+            description: `${resolvedParams.year}年に発売されたシチュエーションCDの一覧`,
+            url: `https://situationcd.com/year/${resolvedParams.year}`,
+            siteName: 'シチュエーションCDデータベース',
+            locale: 'ja_JP',
+            type: 'website',
+        }
     };
 }
 
