@@ -1,43 +1,83 @@
+// src/app/admin/products/page.js
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '../../../lib/firebase/config'; // 共通のFirebase設定を使用
-import { collection, getDocs, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
+import { getAllActors } from '../../../lib/firebase/products';
+import { Search } from 'lucide-react';
 
 export default function ProductsAdminPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedActor, setSelectedActor] = useState('');
+    const [actors, setActors] = useState([]);
     const router = useRouter();
 
-    // 作品リストの取得
+    // 初期データ読み込み
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchInitialData = async () => {
             try {
-                const productsQuery = query(collection(db, 'products'), orderBy('updatedAt', 'desc'));
-                const querySnapshot = await getDocs(productsQuery);
+                setLoading(true);
 
-                const productsData = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    // Firestoreのタイムスタンプを日付文字列に変換
-                    createdAt: formatTimestamp(doc.data().createdAt),
-                    updatedAt: formatTimestamp(doc.data().updatedAt)
-                }));
+                // 作品データを取得
+                await fetchProducts();
 
-                setProducts(productsData);
+                // 声優データを取得
+                const actorsData = await getAllActors();
+                setActors(actorsData);
             } catch (err) {
-                console.error('Error fetching products:', err);
-                setError('作品データの取得に失敗しました');
+                console.error('Error fetching initial data:', err);
+                setError('データの取得に失敗しました');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchProducts();
+        fetchInitialData();
     }, []);
+
+    // 作品リストの取得
+    const fetchProducts = async (actorFilter = null) => {
+        try {
+            let productsQuery;
+
+            if (actorFilter && actorFilter !== '') {
+                // 声優でフィルタ
+                productsQuery = query(
+                    collection(db, 'products'),
+                    where('cast', 'array-contains', actorFilter),
+                    orderBy('updatedAt', 'desc')
+                );
+            } else {
+                // 全件取得
+                productsQuery = query(
+                    collection(db, 'products'),
+                    orderBy('updatedAt', 'desc')
+                );
+            }
+
+            const querySnapshot = await getDocs(productsQuery);
+
+            const productsData = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                // Firestoreのタイムスタンプを日付文字列に変換
+                createdAt: formatTimestamp(doc.data().createdAt),
+                updatedAt: formatTimestamp(doc.data().updatedAt)
+            }));
+
+            setProducts(productsData);
+        } catch (err) {
+            console.error('Error fetching products:', err);
+            setError('作品データの取得に失敗しました');
+        }
+    };
 
     // Firestoreのタイムスタンプを日付文字列に変換する関数
     const formatTimestamp = (timestamp) => {
@@ -64,6 +104,19 @@ export default function ProductsAdminPage() {
             }
         }
     };
+
+    // 声優フィルタの変更処理
+    const handleActorFilterChange = async (e) => {
+        const actor = e.target.value;
+        setSelectedActor(actor);
+        await fetchProducts(actor);
+    };
+
+    // タイトル検索フィルタ処理
+    const filteredProducts = products.filter(product =>
+        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (product.series && product.series.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
 
     if (loading) {
         return (
@@ -102,8 +155,60 @@ export default function ProductsAdminPage() {
                 </div>
             </div>
 
-            {products.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">登録されている作品はありません</p>
+            {/* フィルタセクション */}
+            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* タイトル検索 */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            タイトル・シリーズ検索
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="タイトルまたはシリーズ名を入力..."
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        </div>
+                    </div>
+
+                    {/* 声優フィルタ */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            声優フィルタ
+                        </label>
+                        <select
+                            value={selectedActor}
+                            onChange={handleActorFilterChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">すべての声優</option>
+                            {actors.map((actor) => (
+                                <option key={actor.id} value={actor.name}>
+                                    {actor.name} ({actor.count}件)
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* 検索結果表示 */}
+            <div className="mb-4 text-sm text-gray-600">
+                {selectedActor ? (
+                    <p>声優「{selectedActor}」の作品: {filteredProducts.length}件</p>
+                ) : (
+                    <p>全作品: {filteredProducts.length}件</p>
+                )}
+            </div>
+
+            {filteredProducts.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                    {searchQuery || selectedActor ? '条件に一致する作品はありません' : '登録されている作品はありません'}
+                </p>
             ) : (
                 <div className="relative overflow-auto max-w-full">
                     <table className="w-full table-fixed border-collapse">
@@ -111,6 +216,7 @@ export default function ProductsAdminPage() {
                             <col className="w-20" />
                             <col className="w-64 min-w-[12rem] max-w-lg" />
                             <col className="w-32" />
+                            <col className="w-40" />
                             <col className="w-28" />
                             <col className="w-28" />
                             <col className="w-24" />
@@ -127,6 +233,9 @@ export default function ProductsAdminPage() {
                                     シリーズ
                                 </th>
                                 <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    声優
+                                </th>
+                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     発売日
                                 </th>
                                 <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -138,7 +247,7 @@ export default function ProductsAdminPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {products.map((product) => (
+                            {filteredProducts.map((product) => (
                                 <tr key={product.id} className="hover:bg-gray-50">
                                     <td className="py-3 px-2">
                                         {product.thumbnailUrl ? (
@@ -164,6 +273,11 @@ export default function ProductsAdminPage() {
                                     <td className="py-3 px-2">
                                         <div className="text-sm text-gray-500 truncate w-full block" title={product.series || '-'}>
                                             {product.series || '-'}
+                                        </div>
+                                    </td>
+                                    <td className="py-3 px-2">
+                                        <div className="text-sm text-gray-500 truncate w-full block" title={product.cast?.join(', ') || '-'}>
+                                            {product.cast && product.cast.length > 0 ? product.cast.join(', ') : '-'}
                                         </div>
                                     </td>
                                     <td className="py-3 px-2 whitespace-nowrap">
