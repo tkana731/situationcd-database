@@ -12,39 +12,37 @@ import { Search } from 'lucide-react';
 
 export default function ProductsAdminPage() {
     const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // 初期状態をfalseに変更
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedActor, setSelectedActor] = useState('');
     const [actors, setActors] = useState([]);
+    const [initialLoad, setInitialLoad] = useState(false); // 初回ロードフラグを追加
     const router = useRouter();
 
-    // 初期データ読み込み
+    // 初期データ読み込み（声優データのみ）
     useEffect(() => {
-        const fetchInitialData = async () => {
+        const fetchActors = async () => {
             try {
-                setLoading(true);
-
-                // 作品データを取得
-                await fetchProducts();
-
-                // 声優データを取得
                 const actorsData = await getAllActors();
                 setActors(actorsData);
             } catch (err) {
-                console.error('Error fetching initial data:', err);
-                setError('データの取得に失敗しました');
-            } finally {
-                setLoading(false);
+                console.error('Error fetching actors:', err);
+                setError('声優データの取得に失敗しました');
             }
         };
 
-        fetchInitialData();
+        fetchActors();
     }, []);
 
     // 作品リストの取得
     const fetchProducts = async (actorFilter = null) => {
+        setLoading(true);
+        setError(null);
+
         try {
+            setInitialLoad(true); // 初回ロードフラグを設定
+
             let productsQuery;
 
             if (actorFilter && actorFilter !== '') {
@@ -76,6 +74,8 @@ export default function ProductsAdminPage() {
         } catch (err) {
             console.error('Error fetching products:', err);
             setError('作品データの取得に失敗しました');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -112,20 +112,16 @@ export default function ProductsAdminPage() {
         await fetchProducts(actor);
     };
 
+    // 作品一覧の読み込みボタンを追加
+    const handleLoadProducts = () => {
+        fetchProducts(selectedActor);
+    };
+
     // タイトル検索フィルタ処理
     const filteredProducts = products.filter(product =>
         product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (product.series && product.series.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-
-    if (loading) {
-        return (
-            <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                <p className="mt-4 text-gray-600">作品データを読み込み中...</p>
-            </div>
-        );
-    }
 
     if (error) {
         return (
@@ -190,117 +186,142 @@ export default function ProductsAdminPage() {
                 </div>
             </div>
 
-            {/* 検索結果表示 */}
-            <div className="mb-4 text-sm text-gray-600">
-                {selectedActor ? (
-                    <p>声優「{selectedActor}」の作品: {filteredProducts.length}件</p>
-                ) : (
-                    <p>全作品: {filteredProducts.length}件</p>
-                )}
-            </div>
-
-            {filteredProducts.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                    {searchQuery || selectedActor ? '条件に一致する作品はありません' : '登録されている作品はありません'}
-                </p>
-            ) : (
-                <div className="relative overflow-auto max-w-full">
-                    <table className="w-full table-fixed border-collapse">
-                        <colgroup>
-                            <col className="w-20" />
-                            <col className="w-64 min-w-[12rem] max-w-lg" />
-                            <col className="w-32" />
-                            <col className="w-40" />
-                            <col className="w-28" />
-                            <col className="w-28" />
-                            <col className="w-24" />
-                        </colgroup>
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    サムネ
-                                </th>
-                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    タイトル
-                                </th>
-                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    シリーズ
-                                </th>
-                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    声優
-                                </th>
-                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    発売日
-                                </th>
-                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    更新日
-                                </th>
-                                <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    操作
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {filteredProducts.map((product) => (
-                                <tr key={product.id} className="hover:bg-gray-50">
-                                    <td className="py-3 px-2">
-                                        {product.thumbnailUrl ? (
-                                            <img
-                                                src={product.thumbnailUrl}
-                                                alt={product.title}
-                                                className="h-12 w-12 object-cover rounded"
-                                            />
-                                        ) : (
-                                            <div className="h-12 w-12 bg-gray-100 flex items-center justify-center rounded">
-                                                <span className="text-gray-400 text-xs">なし</span>
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="py-3 px-2">
-                                        <div
-                                            className="text-sm font-medium text-gray-900 truncate w-full block"
-                                            title={product.title}
-                                        >
-                                            {product.title}
-                                        </div>
-                                    </td>
-                                    <td className="py-3 px-2">
-                                        <div className="text-sm text-gray-500 truncate w-full block" title={product.series || '-'}>
-                                            {product.series || '-'}
-                                        </div>
-                                    </td>
-                                    <td className="py-3 px-2">
-                                        <div className="text-sm text-gray-500 truncate w-full block" title={product.cast?.join(', ') || '-'}>
-                                            {product.cast && product.cast.length > 0 ? product.cast.join(', ') : '-'}
-                                        </div>
-                                    </td>
-                                    <td className="py-3 px-2 whitespace-nowrap">
-                                        <div className="text-sm text-gray-500">{product.releaseDate || '-'}</div>
-                                    </td>
-                                    <td className="py-3 px-2 whitespace-nowrap">
-                                        <div className="text-sm text-gray-500">{product.updatedAt || '-'}</div>
-                                    </td>
-                                    <td className="py-3 px-2 whitespace-nowrap">
-                                        <div className="flex space-x-2">
-                                            <Link
-                                                href={`/admin/products/edit?id=${product.id}`}
-                                                className="text-blue-600 hover:text-blue-800"
-                                            >
-                                                編集
-                                            </Link>
-                                            <button
-                                                onClick={() => handleDelete(product.id, product.title)}
-                                                className="text-red-600 hover:text-red-800"
-                                            >
-                                                削除
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+            {/* 初回ロード前の表示 */}
+            {!initialLoad && !loading && (
+                <div className="text-center py-8 bg-white rounded-lg shadow-sm border border-gray-200">
+                    <p className="text-gray-600 mb-4">作品データを読み込むにはボタンをクリックしてください。</p>
+                    <button
+                        onClick={handleLoadProducts}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded"
+                    >
+                        作品一覧を読み込む
+                    </button>
                 </div>
+            )}
+
+            {/* ローディング表示 */}
+            {loading && (
+                <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">作品データを読み込み中...</p>
+                </div>
+            )}
+
+            {/* 検索結果表示 */}
+            {initialLoad && !loading && (
+                <>
+                    <div className="mb-4 text-sm text-gray-600">
+                        {selectedActor ? (
+                            <p>声優「{selectedActor}」の作品: {filteredProducts.length}件</p>
+                        ) : (
+                            <p>全作品: {filteredProducts.length}件</p>
+                        )}
+                    </div>
+
+                    {filteredProducts.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">
+                            {searchQuery || selectedActor ? '条件に一致する作品はありません' : '登録されている作品はありません'}
+                        </p>
+                    ) : (
+                        <div className="relative overflow-auto max-w-full">
+                            <table className="w-full table-fixed border-collapse">
+                                <colgroup>
+                                    <col className="w-20" />
+                                    <col className="w-64 min-w-[12rem] max-w-lg" />
+                                    <col className="w-32" />
+                                    <col className="w-40" />
+                                    <col className="w-28" />
+                                    <col className="w-28" />
+                                    <col className="w-24" />
+                                </colgroup>
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            サムネ
+                                        </th>
+                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            タイトル
+                                        </th>
+                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            シリーズ
+                                        </th>
+                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            声優
+                                        </th>
+                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            発売日
+                                        </th>
+                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            更新日
+                                        </th>
+                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            操作
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {filteredProducts.map((product) => (
+                                        <tr key={product.id} className="hover:bg-gray-50">
+                                            <td className="py-3 px-2">
+                                                {product.thumbnailUrl ? (
+                                                    <img
+                                                        src={product.thumbnailUrl}
+                                                        alt={product.title}
+                                                        className="h-12 w-12 object-cover rounded"
+                                                    />
+                                                ) : (
+                                                    <div className="h-12 w-12 bg-gray-100 flex items-center justify-center rounded">
+                                                        <span className="text-gray-400 text-xs">なし</span>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-2">
+                                                <div
+                                                    className="text-sm font-medium text-gray-900 truncate w-full block"
+                                                    title={product.title}
+                                                >
+                                                    {product.title}
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-2">
+                                                <div className="text-sm text-gray-500 truncate w-full block" title={product.series || '-'}>
+                                                    {product.series || '-'}
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-2">
+                                                <div className="text-sm text-gray-500 truncate w-full block" title={product.cast?.join(', ') || '-'}>
+                                                    {product.cast && product.cast.length > 0 ? product.cast.join(', ') : '-'}
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-2 whitespace-nowrap">
+                                                <div className="text-sm text-gray-500">{product.releaseDate || '-'}</div>
+                                            </td>
+                                            <td className="py-3 px-2 whitespace-nowrap">
+                                                <div className="text-sm text-gray-500">{product.updatedAt || '-'}</div>
+                                            </td>
+                                            <td className="py-3 px-2 whitespace-nowrap">
+                                                <div className="flex space-x-2">
+                                                    <Link
+                                                        href={`/admin/products/edit?id=${product.id}`}
+                                                        className="text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        編集
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => handleDelete(product.id, product.title)}
+                                                        className="text-red-600 hover:text-red-800"
+                                                    >
+                                                        削除
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
