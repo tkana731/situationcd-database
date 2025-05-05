@@ -4,6 +4,7 @@ import { collection, doc, getDocs, writeBatch, serverTimestamp } from 'firebase/
 import { safeDocumentId } from '../../../../lib/firebase/helpers';
 import { normalizeDateString, normalizeUrl } from './csvHelpers';
 import { INCLUDED_ACTORS } from './includedActorsConfig';
+import { generateThumbnailUrl } from '../../../../lib/firebase/dlsiteThumbnailGenerator';
 
 // インポート処理
 export const importToFirestore = async (db, data, header, mappings, firestoreFields, addLog, actorFilterEnabled = false) => {
@@ -14,6 +15,7 @@ export const importToFirestore = async (db, data, header, mappings, firestoreFie
         skipped: 0,
         duplicates: 0, // 重複スキップのカウント用
         filteredByActor: 0, // 声優フィルタによるスキップカウント用
+        thumbnailGenerated: 0, // サムネイル自動生成の件数
         tagsCounted: new Map(),
         actorsCounted: new Map(),
         skippedItems: [] // スキップされたアイテムのリスト
@@ -153,6 +155,16 @@ export const importToFirestore = async (db, data, header, mappings, firestoreFie
                 continue;
             }
 
+            // サムネイルURL自動生成処理
+            if (productData.dlsiteUrl && !productData.thumbnailUrl) {
+                const generatedThumbnailUrl = generateThumbnailUrl(productData.dlsiteUrl);
+                if (generatedThumbnailUrl) {
+                    productData.thumbnailUrl = generatedThumbnailUrl;
+                    stats.thumbnailGenerated++;
+                    addLog(`行 ${i + 2}: サムネイルURL自動生成 - ${generatedThumbnailUrl}`);
+                }
+            }
+
             // Firestoreに追加
             const docRef = doc(collection(db, 'products'));
             batch.set(docRef, productData);
@@ -266,8 +278,6 @@ const updateTagsAndActors = async (db, tagsCounted, actorsCounted, addLog) => {
         if (tagOperationCount > 0) {
             await tagBatch.commit();
         }
-
-        // src/app/components/admin/import/importToFirestore.js （続き）
 
         // 声優データの更新
         addLog('声優データを更新中...');

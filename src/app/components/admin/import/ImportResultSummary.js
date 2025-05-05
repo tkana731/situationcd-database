@@ -13,6 +13,9 @@ const ImportResultSummary = ({ importStats }) => {
                 <li className="mb-1 text-gray-500">スキップ: {importStats.skipped}件 (タイトル未設定)</li>
                 <li className="mb-1 text-yellow-600">重複スキップ: {importStats.duplicates}件</li>
                 <li className="mb-1 text-purple-600">声優フィルタスキップ: {importStats.filteredByActor}件</li>
+                {importStats.thumbnailGenerated > 0 && (
+                    <li className="mb-1 text-blue-600">サムネイルURL自動生成: {importStats.thumbnailGenerated}件</li>
+                )}
                 <li className="mb-1">タグ数: {importStats.tagsCounted ? importStats.tagsCounted.size : 0}種類</li>
                 <li className="mb-1">声優数: {importStats.actorsCounted ? importStats.actorsCounted.size : 0}人</li>
             </ul>
@@ -34,8 +37,8 @@ const ImportResultSummary = ({ importStats }) => {
                                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.title}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.reason.includes('重複') ? 'bg-yellow-100 text-yellow-800' :
-                                                    item.reason.includes('対象声優') ? 'bg-purple-100 text-purple-800' :
-                                                        'bg-gray-100 text-gray-800'
+                                                item.reason.includes('対象声優') ? 'bg-purple-100 text-purple-800' :
+                                                    'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {item.reason}
                                             </span>
