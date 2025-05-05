@@ -10,6 +10,7 @@ import { collection, getDocs, doc, deleteDoc, query, orderBy, where } from 'fire
 import { getAllActors } from '../../../lib/firebase/products';
 import { Search, Calendar, AlertCircle } from 'lucide-react';
 import Pagination from '../../components/ui/Pagination'; // 部品化したページネーションをインポート
+import { INCLUDED_ACTORS } from '../../components/admin/import/includedActorsConfig'; // INCLUDED_ACTORSをインポート
 
 export default function ProductsAdminPage() {
     const [products, setProducts] = useState([]);
@@ -19,6 +20,7 @@ export default function ProductsAdminPage() {
     const [selectedActor, setSelectedActor] = useState('');
     const [selectedYear, setSelectedYear] = useState(''); // 発売年フィルタを追加
     const [selectedMissingInfo, setSelectedMissingInfo] = useState(''); // 未入力項目フィルタを追加
+    const [selectedExcludedActors, setSelectedExcludedActors] = useState(''); // 除外対象フィルタを追加
     const [actors, setActors] = useState([]);
     const [initialLoad, setInitialLoad] = useState(false); // 初回ロードフラグを追加
     const [page, setPage] = useState(1); // ページ番号の追加
@@ -52,6 +54,25 @@ export default function ProductsAdminPage() {
             hasMissing: missing.length > 0,
             missingFields: missing,
             count: missing.length
+        };
+    };
+
+    // 除外対象声優チェック関数
+    const checkExcludedActors = (product) => {
+        if (!product.cast || !Array.isArray(product.cast)) {
+            return {
+                hasExcludedActors: false,
+                excludedActors: []
+            };
+        }
+
+        const excludedActors = product.cast.filter(actor =>
+            !INCLUDED_ACTORS.includes(actor)
+        );
+
+        return {
+            hasExcludedActors: excludedActors.length > 0,
+            excludedActors: excludedActors
         };
     };
 
@@ -184,6 +205,13 @@ export default function ProductsAdminPage() {
         await fetchProducts(selectedActor, selectedYear, missingInfo);
     };
 
+    // 除外対象フィルタの変更処理
+    const handleExcludedActorsFilterChange = (e) => {
+        const value = e.target.value;
+        setSelectedExcludedActors(value);
+        setPage(1); // フィルタ変更時はページをリセット
+    };
+
     // 作品一覧の読み込みボタンを追加
     const handleLoadProducts = () => {
         fetchProducts(selectedActor, selectedYear, selectedMissingInfo);
@@ -205,7 +233,7 @@ export default function ProductsAdminPage() {
         return filteredProducts.slice(startIndex, endIndex);
     };
 
-    // タイトル検索と未入力項目フィルタ処理
+    // タイトル検索、未入力項目フィルタ、除外対象フィルタ処理
     const filteredProducts = products.filter(product => {
         const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (product.series && product.series.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -236,7 +264,16 @@ export default function ProductsAdminPage() {
             }
         }
 
-        return matchesSearch && matchesMissingFilter;
+        // 除外対象フィルタの処理
+        let matchesExcludedFilter = true;
+        if (selectedExcludedActors) {
+            const excludedActorsCheck = checkExcludedActors(product);
+            if (selectedExcludedActors === 'hasExcluded') {
+                matchesExcludedFilter = excludedActorsCheck.hasExcludedActors;
+            }
+        }
+
+        return matchesSearch && matchesMissingFilter && matchesExcludedFilter;
     });
 
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -270,7 +307,7 @@ export default function ProductsAdminPage() {
 
             {/* フィルタセクション */}
             <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     {/* タイトル検索 */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -345,6 +382,21 @@ export default function ProductsAdminPage() {
                             <option value="stellaplayerUrl">ステラ未入力</option>
                         </select>
                     </div>
+
+                    {/* 除外対象フィルタ */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            除外対象フィルタ
+                        </label>
+                        <select
+                            value={selectedExcludedActors}
+                            onChange={handleExcludedActorsFilterChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">すべて</option>
+                            <option value="hasExcluded">除外対象の声優が含まれる</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -373,9 +425,17 @@ export default function ProductsAdminPage() {
             {initialLoad && !loading && (
                 <>
                     <div className="mb-4 text-sm text-gray-600">
-                        {selectedActor || selectedYear || selectedMissingInfo ? (
+                        {selectedActor || selectedYear || selectedMissingInfo || selectedExcludedActors ? (
                             <p>
-                                {selectedActor && selectedYear && selectedMissingInfo ? (
+                                {selectedActor && selectedYear && selectedMissingInfo && selectedExcludedActors ? (
+                                    `声優「${selectedActor}」の${selectedYear}年作品（${selectedMissingInfo === 'any' ? '未入力項目あり' :
+                                        selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力' :
+                                            selectedMissingInfo === 'dlafUrl' ? 'DLsiteアフィリエイト未入力' :
+                                                selectedMissingInfo === 'dlsiteUrl' ? 'DLsite未入力' :
+                                                    selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力' :
+                                                        selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力' : ''
+                                    }、${selectedExcludedActors === 'hasExcluded' ? '除外対象の声優含む' : ''}）: ${filteredProducts.length}件`
+                                ) : selectedActor && selectedYear && selectedMissingInfo ? (
                                     `声優「${selectedActor}」の${selectedYear}年作品（${selectedMissingInfo === 'any' ? '未入力項目あり' :
                                         selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力' :
                                             selectedMissingInfo === 'dlafUrl' ? 'DLsiteアフィリエイト未入力' :
@@ -383,6 +443,24 @@ export default function ProductsAdminPage() {
                                                     selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力' :
                                                         selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力' : ''
                                     }）: ${filteredProducts.length}件`
+                                ) : selectedActor && selectedYear && selectedExcludedActors ? (
+                                    `声優「${selectedActor}」の${selectedYear}年作品（${selectedExcludedActors === 'hasExcluded' ? '除外対象の声優含む' : ''}）: ${filteredProducts.length}件`
+                                ) : selectedActor && selectedMissingInfo && selectedExcludedActors ? (
+                                    `声優「${selectedActor}」の作品（${selectedMissingInfo === 'any' ? '未入力項目あり' :
+                                        selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力' :
+                                            selectedMissingInfo === 'dlafUrl' ? 'DLsiteアフィリエイト未入力' :
+                                                selectedMissingInfo === 'dlsiteUrl' ? 'DLsite未入力' :
+                                                    selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力' :
+                                                        selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力' : ''
+                                    }、${selectedExcludedActors === 'hasExcluded' ? '除外対象の声優含む' : ''}）: ${filteredProducts.length}件`
+                                ) : selectedYear && selectedMissingInfo && selectedExcludedActors ? (
+                                    `${selectedYear}年の作品（${selectedMissingInfo === 'any' ? '未入力項目あり' :
+                                        selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力' :
+                                            selectedMissingInfo === 'dlafUrl' ? 'DLsiteアフィリエイト未入力' :
+                                                selectedMissingInfo === 'dlsiteUrl' ? 'DLsite未入力' :
+                                                    selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力' :
+                                                        selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力' : ''
+                                    }、${selectedExcludedActors === 'hasExcluded' ? '除外対象の声優含む' : ''}）: ${filteredProducts.length}件`
                                 ) : selectedActor && selectedYear ? (
                                     `声優「${selectedActor}」の${selectedYear}年作品: ${filteredProducts.length}件`
                                 ) : selectedActor && selectedMissingInfo ? (
@@ -393,6 +471,8 @@ export default function ProductsAdminPage() {
                                                     selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力' :
                                                         selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力' : ''
                                     }）: ${filteredProducts.length}件`
+                                ) : selectedActor && selectedExcludedActors ? (
+                                    `声優「${selectedActor}」の作品（${selectedExcludedActors === 'hasExcluded' ? '除外対象の声優含む' : ''}）: ${filteredProducts.length}件`
                                 ) : selectedYear && selectedMissingInfo ? (
                                     `${selectedYear}年の作品（${selectedMissingInfo === 'any' ? '未入力項目あり' :
                                         selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力' :
@@ -401,6 +481,16 @@ export default function ProductsAdminPage() {
                                                     selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力' :
                                                         selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力' : ''
                                     }）: ${filteredProducts.length}件`
+                                ) : selectedYear && selectedExcludedActors ? (
+                                    `${selectedYear}年の作品（${selectedExcludedActors === 'hasExcluded' ? '除外対象の声優含む' : ''}）: ${filteredProducts.length}件`
+                                ) : selectedMissingInfo && selectedExcludedActors ? (
+                                    `${selectedMissingInfo === 'any' ? '未入力項目ありの作品' :
+                                        selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力の作品' :
+                                            selectedMissingInfo === 'dlafUrl' ? 'DLsiteアフィリエイト未入力の作品' :
+                                                selectedMissingInfo === 'dlsiteUrl' ? 'DLsite未入力の作品' :
+                                                    selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力の作品' :
+                                                        selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力の作品' : ''
+                                    }（${selectedExcludedActors === 'hasExcluded' ? '除外対象の声優含む' : ''}）: ${filteredProducts.length}件`
                                 ) : selectedActor ? (
                                     `声優「${selectedActor}」の作品: ${filteredProducts.length}件`
                                 ) : selectedYear ? (
@@ -413,6 +503,8 @@ export default function ProductsAdminPage() {
                                                     selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力の作品' :
                                                         selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力の作品' : ''
                                     }: ${filteredProducts.length}件`
+                                ) : selectedExcludedActors ? (
+                                    `除外対象の声優を含む作品: ${filteredProducts.length}件`
                                 ) : (
                                     ''
                                 )}
@@ -424,7 +516,7 @@ export default function ProductsAdminPage() {
 
                     {filteredProducts.length === 0 ? (
                         <p className="text-gray-500 text-center py-8">
-                            {searchQuery || selectedActor || selectedYear || selectedMissingInfo ? '条件に一致する作品はありません' : '登録されている作品はありません'}
+                            {searchQuery || selectedActor || selectedYear || selectedMissingInfo || selectedExcludedActors ? '条件に一致する作品はありません' : '登録されている作品はありません'}
                         </p>
                     ) : (
                         <>
@@ -467,8 +559,9 @@ export default function ProductsAdminPage() {
                                     <tbody className="divide-y divide-gray-200">
                                         {getVisibleResults().map((product) => {
                                             const missingInfo = checkMissingFields(product);
+                                            const excludedActorsInfo = checkExcludedActors(product);
                                             return (
-                                                <tr key={product.id} className={`hover:bg-gray-50 ${missingInfo.hasMissing ? 'bg-red-50' : ''}`}>
+                                                <tr key={product.id} className={`hover:bg-gray-50 ${excludedActorsInfo.hasExcludedActors ? 'bg-purple-50' : ''}`}>
                                                     <td className="py-3 px-2">
                                                         {product.thumbnailUrl ? (
                                                             <img
@@ -494,7 +587,18 @@ export default function ProductsAdminPage() {
                                                                     {missingInfo.count}項目未入力
                                                                 </span>
                                                             )}
+                                                            {excludedActorsInfo.hasExcludedActors && (
+                                                                <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                                                    <AlertCircle size={12} className="mr-1" />
+                                                                    除外対象声優含む
+                                                                </span>
+                                                            )}
                                                         </div>
+                                                        {excludedActorsInfo.hasExcludedActors && (
+                                                            <div className="text-xs text-purple-600 mt-1">
+                                                                除外対象: {excludedActorsInfo.excludedActors.join(', ')}
+                                                            </div>
+                                                        )}
                                                         {missingInfo.hasMissing && (
                                                             <div className="text-xs text-red-600 mt-1">
                                                                 未入力: {missingInfo.missingFields.join(', ')}
