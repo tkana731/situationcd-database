@@ -9,6 +9,7 @@ import { db } from '../../../lib/firebase/config'; // 共通のFirebase設定を
 import { collection, getDocs, doc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
 import { getAllActors } from '../../../lib/firebase/products';
 import { Search, Calendar, AlertCircle } from 'lucide-react';
+import Pagination from '../../components/ui/Pagination'; // 部品化したページネーションをインポート
 
 export default function ProductsAdminPage() {
     const [products, setProducts] = useState([]);
@@ -20,6 +21,7 @@ export default function ProductsAdminPage() {
     const [selectedMissingInfo, setSelectedMissingInfo] = useState(''); // 未入力項目フィルタを追加
     const [actors, setActors] = useState([]);
     const [initialLoad, setInitialLoad] = useState(false); // 初回ロードフラグを追加
+    const [page, setPage] = useState(1); // ページ番号の追加
     const router = useRouter();
 
     // 発売年の選択肢を生成する関数
@@ -162,6 +164,7 @@ export default function ProductsAdminPage() {
     const handleActorFilterChange = async (e) => {
         const actor = e.target.value;
         setSelectedActor(actor);
+        setPage(1); // フィルタ変更時はページをリセット
         await fetchProducts(actor, selectedYear, selectedMissingInfo);
     };
 
@@ -169,6 +172,7 @@ export default function ProductsAdminPage() {
     const handleYearFilterChange = async (e) => {
         const year = e.target.value;
         setSelectedYear(year);
+        setPage(1); // フィルタ変更時はページをリセット
         await fetchProducts(selectedActor, year, selectedMissingInfo);
     };
 
@@ -176,12 +180,29 @@ export default function ProductsAdminPage() {
     const handleMissingInfoFilterChange = async (e) => {
         const missingInfo = e.target.value;
         setSelectedMissingInfo(missingInfo);
+        setPage(1); // フィルタ変更時はページをリセット
         await fetchProducts(selectedActor, selectedYear, missingInfo);
     };
 
     // 作品一覧の読み込みボタンを追加
     const handleLoadProducts = () => {
         fetchProducts(selectedActor, selectedYear, selectedMissingInfo);
+    };
+
+    // ページ変更時に先頭にスクロール
+    useEffect(() => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }, [page]);
+
+    // ページネーション用の作品取得
+    const itemsPerPage = 20;
+    const getVisibleResults = () => {
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return filteredProducts.slice(startIndex, endIndex);
     };
 
     // タイトル検索と未入力項目フィルタ処理
@@ -217,6 +238,13 @@ export default function ProductsAdminPage() {
 
         return matchesSearch && matchesMissingFilter;
     });
+
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+    // ページ変更ハンドラ（Paginationコンポーネント用）
+    const handlePageChange = (newPage) => {
+        setPage(newPage);
+    };
 
     if (error) {
         return (
@@ -399,117 +427,129 @@ export default function ProductsAdminPage() {
                             {searchQuery || selectedActor || selectedYear || selectedMissingInfo ? '条件に一致する作品はありません' : '登録されている作品はありません'}
                         </p>
                     ) : (
-                        <div className="relative overflow-auto max-w-full">
-                            <table className="w-full table-fixed border-collapse">
-                                <colgroup>
-                                    <col className="w-20" />
-                                    <col className="w-64 min-w-[12rem] max-w-lg" />
-                                    <col className="w-32" />
-                                    <col className="w-40" />
-                                    <col className="w-28" />
-                                    <col className="w-28" />
-                                    <col className="w-24" />
-                                </colgroup>
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            サムネ
-                                        </th>
-                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            タイトル
-                                        </th>
-                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            シリーズ
-                                        </th>
-                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            声優
-                                        </th>
-                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            発売日
-                                        </th>
-                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            更新日
-                                        </th>
-                                        <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            操作
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {filteredProducts.map((product) => {
-                                        const missingInfo = checkMissingFields(product);
-                                        return (
-                                            <tr key={product.id} className={`hover:bg-gray-50 ${missingInfo.hasMissing ? 'bg-red-50' : ''}`}>
-                                                <td className="py-3 px-2">
-                                                    {product.thumbnailUrl ? (
-                                                        <img
-                                                            src={product.thumbnailUrl}
-                                                            alt={product.title}
-                                                            className="h-12 w-12 object-cover rounded"
-                                                        />
-                                                    ) : (
-                                                        <div className="h-12 w-12 bg-gray-100 flex items-center justify-center rounded">
-                                                            <span className="text-gray-400 text-xs">なし</span>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="py-3 px-2">
-                                                    <div
-                                                        className="text-sm font-medium text-gray-900 truncate w-full block"
-                                                        title={product.title}
-                                                    >
-                                                        {product.title}
-                                                        {missingInfo.hasMissing && (
-                                                            <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                                                <AlertCircle size={12} className="mr-1" />
-                                                                {missingInfo.count}項目未入力
-                                                            </span>
+                        <>
+                            <div className="relative overflow-auto max-w-full">
+                                <table className="w-full table-fixed border-collapse">
+                                    <colgroup>
+                                        <col className="w-20" />
+                                        <col className="w-64 min-w-[12rem] max-w-lg" />
+                                        <col className="w-32" />
+                                        <col className="w-40" />
+                                        <col className="w-28" />
+                                        <col className="w-28" />
+                                        <col className="w-24" />
+                                    </colgroup>
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                サムネ
+                                            </th>
+                                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                タイトル
+                                            </th>
+                                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                シリーズ
+                                            </th>
+                                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                声優
+                                            </th>
+                                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                発売日
+                                            </th>
+                                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                更新日
+                                            </th>
+                                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                操作
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {getVisibleResults().map((product) => {
+                                            const missingInfo = checkMissingFields(product);
+                                            return (
+                                                <tr key={product.id} className={`hover:bg-gray-50 ${missingInfo.hasMissing ? 'bg-red-50' : ''}`}>
+                                                    <td className="py-3 px-2">
+                                                        {product.thumbnailUrl ? (
+                                                            <img
+                                                                src={product.thumbnailUrl}
+                                                                alt={product.title}
+                                                                className="h-12 w-12 object-cover rounded"
+                                                            />
+                                                        ) : (
+                                                            <div className="h-12 w-12 bg-gray-100 flex items-center justify-center rounded">
+                                                                <span className="text-gray-400 text-xs">なし</span>
+                                                            </div>
                                                         )}
-                                                    </div>
-                                                    {missingInfo.hasMissing && (
-                                                        <div className="text-xs text-red-600 mt-1">
-                                                            未入力: {missingInfo.missingFields.join(', ')}
+                                                    </td>
+                                                    <td className="py-3 px-2">
+                                                        <div
+                                                            className="text-sm font-medium text-gray-900 truncate w-full block"
+                                                            title={product.title}
+                                                        >
+                                                            {product.title}
+                                                            {missingInfo.hasMissing && (
+                                                                <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                                    <AlertCircle size={12} className="mr-1" />
+                                                                    {missingInfo.count}項目未入力
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </td>
-                                                <td className="py-3 px-2">
-                                                    <div className="text-sm text-gray-500 truncate w-full block" title={product.series || '-'}>
-                                                        {product.series || '-'}
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-2">
-                                                    <div className="text-sm text-gray-500 truncate w-full block" title={product.cast?.join(', ') || '-'}>
-                                                        {product.cast && product.cast.length > 0 ? product.cast.join(', ') : '-'}
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-2 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-500">{product.releaseDate || '-'}</div>
-                                                </td>
-                                                <td className="py-3 px-2 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-500">{product.updatedAt || '-'}</div>
-                                                </td>
-                                                <td className="py-3 px-2 whitespace-nowrap">
-                                                    <div className="flex space-x-2">
-                                                        <Link
-                                                            href={`/admin/products/edit?id=${product.id}`}
-                                                            className="text-blue-600 hover:text-blue-800"
-                                                        >
-                                                            編集
-                                                        </Link>
-                                                        <button
-                                                            onClick={() => handleDelete(product.id, product.title)}
-                                                            className="text-red-600 hover:text-red-800"
-                                                        >
-                                                            削除
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                                        {missingInfo.hasMissing && (
+                                                            <div className="text-xs text-red-600 mt-1">
+                                                                未入力: {missingInfo.missingFields.join(', ')}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-2">
+                                                        <div className="text-sm text-gray-500 truncate w-full block" title={product.series || '-'}>
+                                                            {product.series || '-'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-2">
+                                                        <div className="text-sm text-gray-500 truncate w-full block" title={product.cast?.join(', ') || '-'}>
+                                                            {product.cast && product.cast.length > 0 ? product.cast.join(', ') : '-'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-2 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-500">{product.releaseDate || '-'}</div>
+                                                    </td>
+                                                    <td className="py-3 px-2 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-500">{product.updatedAt || '-'}</div>
+                                                    </td>
+                                                    <td className="py-3 px-2 whitespace-nowrap">
+                                                        <div className="flex space-x-2">
+                                                            <Link
+                                                                href={`/admin/products/edit?id=${product.id}`}
+                                                                className="text-blue-600 hover:text-blue-800"
+                                                            >
+                                                                編集
+                                                            </Link>
+                                                            <button
+                                                                onClick={() => handleDelete(product.id, product.title)}
+                                                                className="text-red-600 hover:text-red-800"
+                                                            >
+                                                                削除
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* 部品化したPaginationコンポーネントを使用 */}
+                            <div className="mt-8">
+                                <Pagination
+                                    currentPage={page}
+                                    totalPages={totalPages}
+                                    onPageChange={handlePageChange}
+                                    colorScheme="blue"
+                                />
+                            </div>
+                        </>
                     )}
                 </>
             )}

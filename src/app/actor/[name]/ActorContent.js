@@ -7,6 +7,7 @@ import { Box, User, Tag } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import ProductGrid from '../../components/ui/ProductGrid';
 import SchemaOrg from '../../components/SchemaOrg';
+import Pagination from '../../components/ui/Pagination'; // 部品化したページネーションをインポート
 import { searchProducts } from '../../../lib/firebase/products';
 
 function ActorDetailContent() {
@@ -54,13 +55,9 @@ function ActorDetailContent() {
 
     const totalPages = Math.ceil(products.length / itemsPerPage);
 
-    // ページネーションボタンハンドラー
-    const handlePrevPage = () => {
-        setPage(prev => Math.max(prev - 1, 1));
-    };
-
-    const handleNextPage = () => {
-        setPage(prev => Math.min(prev + 1, totalPages));
+    // ページ変更ハンドラ（Paginationコンポーネント用）
+    const handlePageChange = (newPage) => {
+        setPage(newPage);
     };
 
     return (
@@ -90,33 +87,15 @@ function ActorDetailContent() {
                     <>
                         <ProductGrid products={getVisibleResults()} />
 
-                        {totalPages > 1 && (
-                            <div className="mt-10 flex justify-center items-center gap-4">
-                                <button
-                                    onClick={handlePrevPage}
-                                    disabled={page === 1}
-                                    className={`px-4 py-2 rounded ${page === 1
-                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    前へ
-                                </button>
-                                <span className="text-gray-700">
-                                    {page} / {totalPages}
-                                </span>
-                                <button
-                                    onClick={handleNextPage}
-                                    disabled={page === totalPages}
-                                    className={`px-4 py-2 rounded ${page === totalPages
-                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    次へ
-                                </button>
-                            </div>
-                        )}
+                        {/* 部品化したPaginationコンポーネントを使用 */}
+                        <div className="mt-10">
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                                colorScheme="pink"
+                            />
+                        </div>
                     </>
                 ) : (
                     <div className="text-center py-12 bg-white rounded-lg shadow-sm">
