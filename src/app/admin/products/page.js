@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { db } from '../../../lib/firebase/config'; // 共通のFirebase設定を使用
 import { collection, getDocs, doc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
 import { getAllActors } from '../../../lib/firebase/products';
-import { Search, Calendar } from 'lucide-react';
+import { Search, Calendar, AlertCircle } from 'lucide-react';
 
 export default function ProductsAdminPage() {
     const [products, setProducts] = useState([]);
@@ -17,6 +17,7 @@ export default function ProductsAdminPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedActor, setSelectedActor] = useState('');
     const [selectedYear, setSelectedYear] = useState(''); // 発売年フィルタを追加
+    const [selectedMissingInfo, setSelectedMissingInfo] = useState(''); // 未入力項目フィルタを追加
     const [actors, setActors] = useState([]);
     const [initialLoad, setInitialLoad] = useState(false); // 初回ロードフラグを追加
     const router = useRouter();
@@ -29,6 +30,27 @@ export default function ProductsAdminPage() {
             years.push(year);
         }
         return years;
+    };
+
+    // 未入力項目のチェック関数
+    const checkMissingFields = (product) => {
+        const fields = {
+            thumbnailUrl: 'サムネイル',
+            dlafUrl: 'DLsiteアフィリエイト',
+            dlsiteUrl: 'DLsite',
+            pocketdramaUrl: 'ポケドラ',
+            stellaplayerUrl: 'ステラ'
+        };
+
+        const missing = Object.entries(fields)
+            .filter(([key, _]) => !product[key] || product[key] === '')
+            .map(([_, label]) => label);
+
+        return {
+            hasMissing: missing.length > 0,
+            missingFields: missing,
+            count: missing.length
+        };
     };
 
     // 初期データ読み込み（声優データのみ）
@@ -47,7 +69,7 @@ export default function ProductsAdminPage() {
     }, []);
 
     // 作品リストの取得
-    const fetchProducts = async (actorFilter = null, yearFilter = null) => {
+    const fetchProducts = async (actorFilter = null, yearFilter = null, missingInfoFilter = null) => {
         setLoading(true);
         setError(null);
 
@@ -140,26 +162,61 @@ export default function ProductsAdminPage() {
     const handleActorFilterChange = async (e) => {
         const actor = e.target.value;
         setSelectedActor(actor);
-        await fetchProducts(actor, selectedYear);
+        await fetchProducts(actor, selectedYear, selectedMissingInfo);
     };
 
     // 発売年フィルタの変更処理
     const handleYearFilterChange = async (e) => {
         const year = e.target.value;
         setSelectedYear(year);
-        await fetchProducts(selectedActor, year);
+        await fetchProducts(selectedActor, year, selectedMissingInfo);
+    };
+
+    // 未入力項目フィルタの変更処理
+    const handleMissingInfoFilterChange = async (e) => {
+        const missingInfo = e.target.value;
+        setSelectedMissingInfo(missingInfo);
+        await fetchProducts(selectedActor, selectedYear, missingInfo);
     };
 
     // 作品一覧の読み込みボタンを追加
     const handleLoadProducts = () => {
-        fetchProducts(selectedActor, selectedYear);
+        fetchProducts(selectedActor, selectedYear, selectedMissingInfo);
     };
 
-    // タイトル検索フィルタ処理
-    const filteredProducts = products.filter(product =>
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (product.series && product.series.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    // タイトル検索と未入力項目フィルタ処理
+    const filteredProducts = products.filter(product => {
+        const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (product.series && product.series.toLowerCase().includes(searchQuery.toLowerCase()));
+
+        const missingInfo = checkMissingFields(product);
+
+        let matchesMissingFilter = true;
+        if (selectedMissingInfo) {
+            switch (selectedMissingInfo) {
+                case 'any':
+                    matchesMissingFilter = missingInfo.hasMissing;
+                    break;
+                case 'thumbnailUrl':
+                    matchesMissingFilter = !product.thumbnailUrl;
+                    break;
+                case 'dlafUrl':
+                    matchesMissingFilter = !product.dlafUrl;
+                    break;
+                case 'dlsiteUrl':
+                    matchesMissingFilter = !product.dlsiteUrl;
+                    break;
+                case 'pocketdramaUrl':
+                    matchesMissingFilter = !product.pocketdramaUrl;
+                    break;
+                case 'stellaplayerUrl':
+                    matchesMissingFilter = !product.stellaplayerUrl;
+                    break;
+            }
+        }
+
+        return matchesSearch && matchesMissingFilter;
+    });
 
     if (error) {
         return (
@@ -185,7 +242,7 @@ export default function ProductsAdminPage() {
 
             {/* フィルタセクション */}
             <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* タイトル検索 */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -240,6 +297,26 @@ export default function ProductsAdminPage() {
                             ))}
                         </select>
                     </div>
+
+                    {/* 未入力項目フィルタ */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            未入力項目フィルタ
+                        </label>
+                        <select
+                            value={selectedMissingInfo}
+                            onChange={handleMissingInfoFilterChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">すべて</option>
+                            <option value="any">いずれかの項目が未入力</option>
+                            <option value="thumbnailUrl">サムネイル未入力</option>
+                            <option value="dlafUrl">DLsiteアフィリエイト未入力</option>
+                            <option value="dlsiteUrl">DLsite未入力</option>
+                            <option value="pocketdramaUrl">ポケドラ未入力</option>
+                            <option value="stellaplayerUrl">ステラ未入力</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -268,14 +345,48 @@ export default function ProductsAdminPage() {
             {initialLoad && !loading && (
                 <>
                     <div className="mb-4 text-sm text-gray-600">
-                        {selectedActor || selectedYear ? (
+                        {selectedActor || selectedYear || selectedMissingInfo ? (
                             <p>
-                                {selectedActor && selectedYear ? (
+                                {selectedActor && selectedYear && selectedMissingInfo ? (
+                                    `声優「${selectedActor}」の${selectedYear}年作品（${selectedMissingInfo === 'any' ? '未入力項目あり' :
+                                        selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力' :
+                                            selectedMissingInfo === 'dlafUrl' ? 'DLsiteアフィリエイト未入力' :
+                                                selectedMissingInfo === 'dlsiteUrl' ? 'DLsite未入力' :
+                                                    selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力' :
+                                                        selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力' : ''
+                                    }）: ${filteredProducts.length}件`
+                                ) : selectedActor && selectedYear ? (
                                     `声優「${selectedActor}」の${selectedYear}年作品: ${filteredProducts.length}件`
+                                ) : selectedActor && selectedMissingInfo ? (
+                                    `声優「${selectedActor}」の作品（${selectedMissingInfo === 'any' ? '未入力項目あり' :
+                                        selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力' :
+                                            selectedMissingInfo === 'dlafUrl' ? 'DLsiteアフィリエイト未入力' :
+                                                selectedMissingInfo === 'dlsiteUrl' ? 'DLsite未入力' :
+                                                    selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力' :
+                                                        selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力' : ''
+                                    }）: ${filteredProducts.length}件`
+                                ) : selectedYear && selectedMissingInfo ? (
+                                    `${selectedYear}年の作品（${selectedMissingInfo === 'any' ? '未入力項目あり' :
+                                        selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力' :
+                                            selectedMissingInfo === 'dlafUrl' ? 'DLsiteアフィリエイト未入力' :
+                                                selectedMissingInfo === 'dlsiteUrl' ? 'DLsite未入力' :
+                                                    selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力' :
+                                                        selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力' : ''
+                                    }）: ${filteredProducts.length}件`
                                 ) : selectedActor ? (
                                     `声優「${selectedActor}」の作品: ${filteredProducts.length}件`
-                                ) : (
+                                ) : selectedYear ? (
                                     `${selectedYear}年の作品: ${filteredProducts.length}件`
+                                ) : selectedMissingInfo ? (
+                                    `${selectedMissingInfo === 'any' ? '未入力項目ありの作品' :
+                                        selectedMissingInfo === 'thumbnailUrl' ? 'サムネイル未入力の作品' :
+                                            selectedMissingInfo === 'dlafUrl' ? 'DLsiteアフィリエイト未入力の作品' :
+                                                selectedMissingInfo === 'dlsiteUrl' ? 'DLsite未入力の作品' :
+                                                    selectedMissingInfo === 'pocketdramaUrl' ? 'ポケドラ未入力の作品' :
+                                                        selectedMissingInfo === 'stellaplayerUrl' ? 'ステラ未入力の作品' : ''
+                                    }: ${filteredProducts.length}件`
+                                ) : (
+                                    ''
                                 )}
                             </p>
                         ) : (
@@ -285,7 +396,7 @@ export default function ProductsAdminPage() {
 
                     {filteredProducts.length === 0 ? (
                         <p className="text-gray-500 text-center py-8">
-                            {searchQuery || selectedActor || selectedYear ? '条件に一致する作品はありません' : '登録されている作品はありません'}
+                            {searchQuery || selectedActor || selectedYear || selectedMissingInfo ? '条件に一致する作品はありません' : '登録されている作品はありません'}
                         </p>
                     ) : (
                         <div className="relative overflow-auto max-w-full">
@@ -325,63 +436,77 @@ export default function ProductsAdminPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {filteredProducts.map((product) => (
-                                        <tr key={product.id} className="hover:bg-gray-50">
-                                            <td className="py-3 px-2">
-                                                {product.thumbnailUrl ? (
-                                                    <img
-                                                        src={product.thumbnailUrl}
-                                                        alt={product.title}
-                                                        className="h-12 w-12 object-cover rounded"
-                                                    />
-                                                ) : (
-                                                    <div className="h-12 w-12 bg-gray-100 flex items-center justify-center rounded">
-                                                        <span className="text-gray-400 text-xs">なし</span>
+                                    {filteredProducts.map((product) => {
+                                        const missingInfo = checkMissingFields(product);
+                                        return (
+                                            <tr key={product.id} className={`hover:bg-gray-50 ${missingInfo.hasMissing ? 'bg-red-50' : ''}`}>
+                                                <td className="py-3 px-2">
+                                                    {product.thumbnailUrl ? (
+                                                        <img
+                                                            src={product.thumbnailUrl}
+                                                            alt={product.title}
+                                                            className="h-12 w-12 object-cover rounded"
+                                                        />
+                                                    ) : (
+                                                        <div className="h-12 w-12 bg-gray-100 flex items-center justify-center rounded">
+                                                            <span className="text-gray-400 text-xs">なし</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 px-2">
+                                                    <div
+                                                        className="text-sm font-medium text-gray-900 truncate w-full block"
+                                                        title={product.title}
+                                                    >
+                                                        {product.title}
+                                                        {missingInfo.hasMissing && (
+                                                            <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                                <AlertCircle size={12} className="mr-1" />
+                                                                {missingInfo.count}項目未入力
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </td>
-                                            <td className="py-3 px-2">
-                                                <div
-                                                    className="text-sm font-medium text-gray-900 truncate w-full block"
-                                                    title={product.title}
-                                                >
-                                                    {product.title}
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-2">
-                                                <div className="text-sm text-gray-500 truncate w-full block" title={product.series || '-'}>
-                                                    {product.series || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-2">
-                                                <div className="text-sm text-gray-500 truncate w-full block" title={product.cast?.join(', ') || '-'}>
-                                                    {product.cast && product.cast.length > 0 ? product.cast.join(', ') : '-'}
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-2 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500">{product.releaseDate || '-'}</div>
-                                            </td>
-                                            <td className="py-3 px-2 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500">{product.updatedAt || '-'}</div>
-                                            </td>
-                                            <td className="py-3 px-2 whitespace-nowrap">
-                                                <div className="flex space-x-2">
-                                                    <Link
-                                                        href={`/admin/products/edit?id=${product.id}`}
-                                                        className="text-blue-600 hover:text-blue-800"
-                                                    >
-                                                        編集
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => handleDelete(product.id, product.title)}
-                                                        className="text-red-600 hover:text-red-800"
-                                                    >
-                                                        削除
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                    {missingInfo.hasMissing && (
+                                                        <div className="text-xs text-red-600 mt-1">
+                                                            未入力: {missingInfo.missingFields.join(', ')}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 px-2">
+                                                    <div className="text-sm text-gray-500 truncate w-full block" title={product.series || '-'}>
+                                                        {product.series || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-2">
+                                                    <div className="text-sm text-gray-500 truncate w-full block" title={product.cast?.join(', ') || '-'}>
+                                                        {product.cast && product.cast.length > 0 ? product.cast.join(', ') : '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-2 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-500">{product.releaseDate || '-'}</div>
+                                                </td>
+                                                <td className="py-3 px-2 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-500">{product.updatedAt || '-'}</div>
+                                                </td>
+                                                <td className="py-3 px-2 whitespace-nowrap">
+                                                    <div className="flex space-x-2">
+                                                        <Link
+                                                            href={`/admin/products/edit?id=${product.id}`}
+                                                            className="text-blue-600 hover:text-blue-800"
+                                                        >
+                                                            編集
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => handleDelete(product.id, product.title)}
+                                                            className="text-red-600 hover:text-red-800"
+                                                        >
+                                                            削除
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
