@@ -237,6 +237,14 @@ export default function AdminLayout({ children }) {
                                             >
                                                 DLsiteサムネイル生成
                                             </Link>
+                                            <Link
+                                                href="/admin/migration/dlsite-affiliate"
+                                                className={`block px-4 py-2 text-sm ${pathname === '/admin/migration/dlsite-affiliate' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                                                    }`}
+                                                onClick={() => setMigrationDropdownOpen(false)}
+                                            >
+                                                DLsiteアフィリエイト生成
+                                            </Link>
                                         </div>
                                     )}
                                 </div>
