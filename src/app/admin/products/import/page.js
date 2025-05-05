@@ -44,6 +44,7 @@ export default function ImportProductsPage() {
     const [mappings, setMappings] = useState({});
     const [selectedPreset, setSelectedPreset] = useState('custom');
     const [mounted, setMounted] = useState(false);
+    const [actorFilterEnabled, setActorFilterEnabled] = useState(false); // 声優フィルタのオン/オフ状態
     const fileInputRef = useRef(null);
     const router = useRouter();
 
@@ -262,8 +263,15 @@ export default function ImportProductsPage() {
 
             addLog(`インポート処理を開始します。合計 ${data.length} 件のデータを処理します...`);
 
+            // 声優フィルタの状態をログに記録
+            if (actorFilterEnabled) {
+                addLog('声優フィルタが有効になっています。設定で指定された声優のみがインポートされます。');
+            } else {
+                addLog('声優フィルタは無効です。すべての作品がインポートされます。');
+            }
+
             // Firestoreにデータをインポート
-            const stats = await importToFirestore(db, data, header, mappings, firestoreFields, addLog);
+            const stats = await importToFirestore(db, data, header, mappings, firestoreFields, addLog, actorFilterEnabled);
 
             setImportStats(stats);
             setSuccess(`${stats.success}件のデータを正常にインポートしました`);
@@ -358,6 +366,25 @@ export default function ImportProductsPage() {
                     firestoreFields={firestoreFields}
                 />
             )}
+
+            {/* 声優フィルタオプション */}
+            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center">
+                    <input
+                        type="checkbox"
+                        id="actorFilter"
+                        checked={actorFilterEnabled}
+                        onChange={(e) => setActorFilterEnabled(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="actorFilter" className="ml-2 text-sm font-medium text-gray-700">
+                        声優フィルタを有効にする（設定で指定した声優のみをインポート）
+                    </label>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                    有効にすると、設定ファイルで指定された声優のみが登録されます。無効の場合、すべての作品が登録されます。
+                </p>
+            </div>
 
             <div className="flex justify-center">
                 <button

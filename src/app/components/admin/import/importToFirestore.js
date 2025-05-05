@@ -3,15 +3,17 @@
 import { collection, doc, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { safeDocumentId } from '../../../../lib/firebase/helpers';
 import { normalizeDateString, normalizeUrl } from './csvHelpers';
+import { INCLUDED_ACTORS } from './includedActorsConfig';
 
 // インポート処理
-export const importToFirestore = async (db, data, header, mappings, firestoreFields, addLog) => {
+export const importToFirestore = async (db, data, header, mappings, firestoreFields, addLog, actorFilterEnabled = false) => {
     const stats = {
         total: data.length,
         success: 0,
         failed: 0,
         skipped: 0,
         duplicates: 0, // 重複スキップのカウント用
+        filteredByActor: 0, // 声優フィルタによるスキップカウント用
         tagsCounted: new Map(),
         actorsCounted: new Map(),
         skippedItems: [] // スキップされたアイテムのリスト
@@ -33,6 +35,10 @@ export const importToFirestore = async (db, data, header, mappings, firestoreFie
         }
     });
     addLog(`${existingTitles.size}件の既存タイトルを読み込みました。`);
+
+    if (actorFilterEnabled && INCLUDED_ACTORS.length > 0) {
+        addLog(`インポート対象声優: ${INCLUDED_ACTORS.join(', ')}`);
+    }
 
     for (let i = 0; i < data.length; i++) {
         try {
@@ -106,6 +112,34 @@ export const importToFirestore = async (db, data, header, mappings, firestoreFie
                 addLog(`行 ${i + 2}: タイトルが設定されていないためスキップします`);
                 stats.skipped++;
                 continue;
+            }
+
+            // 声優フィルタが有効な場合のチェック
+            if (actorFilterEnabled && INCLUDED_ACTORS.length > 0) {
+                if (productData.cast && productData.cast.length > 0) {
+                    const hasIncludedActor = productData.cast.some(actor =>
+                        INCLUDED_ACTORS.includes(actor)
+                    );
+
+                    if (!hasIncludedActor) {
+                        addLog(`行 ${i + 2}: "${title}" は対象声優が含まれていないためスキップします`);
+                        stats.filteredByActor++;
+                        stats.skippedItems.push({
+                            title: title,
+                            reason: '対象声優なし'
+                        });
+                        continue;
+                    }
+                } else {
+                    // 声優情報がない作品もスキップ
+                    addLog(`行 ${i + 2}: "${title}" は声優情報がないためスキップします`);
+                    stats.filteredByActor++;
+                    stats.skippedItems.push({
+                        title: title,
+                        reason: '声優情報なし'
+                    });
+                    continue;
+                }
             }
 
             // 既存のタイトルと重複チェック
@@ -232,6 +266,8 @@ const updateTagsAndActors = async (db, tagsCounted, actorsCounted, addLog) => {
         if (tagOperationCount > 0) {
             await tagBatch.commit();
         }
+
+        // src/app/components/admin/import/importToFirestore.js （続き）
 
         // 声優データの更新
         addLog('声優データを更新中...');
