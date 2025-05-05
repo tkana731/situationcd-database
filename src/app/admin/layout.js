@@ -120,7 +120,6 @@ export default function AdminLayout({ children }) {
     // データ関連のパスかどうかをチェック  
     const isDataRelatedPath = (path) => {
         return path === '/admin/recalculate' ||
-            path === '/admin/products/bulk-edit' ||
             path === '/admin/products/import';
     };
 
@@ -197,14 +196,6 @@ export default function AdminLayout({ children }) {
 
                                     {isDropdownMounted && dataDropdownOpen && (
                                         <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 py-1">
-                                            <Link
-                                                href="/admin/products/bulk-edit"
-                                                className={`block px-4 py-2 text-sm ${pathname === '/admin/products/bulk-edit' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
-                                                onClick={() => setDataDropdownOpen(false)}
-                                            >
-                                                一括編集
-                                            </Link>
                                             <Link
                                                 href="/admin/products/import"
                                                 className={`block px-4 py-2 text-sm ${pathname === '/admin/products/import' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'

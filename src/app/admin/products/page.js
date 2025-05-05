@@ -141,12 +141,6 @@ export default function ProductsAdminPage() {
                 <h1 className="text-2xl font-bold">作品一覧</h1>
                 <div className="flex space-x-2">
                     <Link
-                        href="/admin/products/bulk-edit"
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded"
-                    >
-                        一括編集
-                    </Link>
-                    <Link
                         href="/admin/products/new"
                         className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
                     >
