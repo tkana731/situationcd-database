@@ -6,9 +6,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '../../../lib/firebase/config'; // 共通のFirebase設定を使用
-import { collection, getDocs, doc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, query, orderBy, where, writeBatch } from 'firebase/firestore';
 import { getAllActors } from '../../../lib/firebase/products';
-import { Search, Calendar, AlertCircle } from 'lucide-react';
+import { Search, Calendar, AlertCircle, Trash2 } from 'lucide-react';
 import Pagination from '../../components/ui/Pagination'; // 部品化したページネーションをインポート
 import { INCLUDED_ACTORS } from '../../components/admin/import/includedActorsConfig'; // INCLUDED_ACTORSをインポート
 
@@ -24,6 +24,8 @@ export default function ProductsAdminPage() {
     const [actors, setActors] = useState([]);
     const [initialLoad, setInitialLoad] = useState(false); // 初回ロードフラグを追加
     const [page, setPage] = useState(1); // ページ番号の追加
+    const [selectedProducts, setSelectedProducts] = useState([]); // 選択された作品のIDリスト
+    const [isDeleting, setIsDeleting] = useState(false); // 削除中フラグ
     const router = useRouter();
 
     // 発売年の選択肢を生成する関数
@@ -95,6 +97,7 @@ export default function ProductsAdminPage() {
     const fetchProducts = async (actorFilter = null, yearFilter = null, missingInfoFilter = null) => {
         setLoading(true);
         setError(null);
+        setSelectedProducts([]); // 作品リストを再取得するときに選択をクリア
 
         try {
             setInitialLoad(true); // 初回ロードフラグを設定
@@ -178,6 +181,92 @@ export default function ProductsAdminPage() {
                 console.error('Error deleting product:', err);
                 alert('削除に失敗しました');
             }
+        }
+    };
+
+    // 複数選択されている作品の削除
+    const handleBulkDelete = async () => {
+        if (selectedProducts.length === 0) return;
+
+        const selectedProductDetails = selectedProducts.map(id => {
+            const product = products.find(p => p.id === id);
+            return {
+                id,
+                title: product?.title || 'タイトル不明'
+            };
+        });
+
+        const confirmMessage = `以下の${selectedProducts.length}件の作品を削除してもよろしいですか？\n\n${selectedProductDetails.map(p => `- ${p.title}`).join('\n')}`;
+
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        setIsDeleting(true);
+        setError(null);
+
+        try {
+            const batch = writeBatch(db);
+
+            // バッチで削除処理
+            selectedProducts.forEach(id => {
+                const docRef = doc(db, 'products', id);
+                batch.delete(docRef);
+            });
+
+            await batch.commit();
+
+            // 削除成功後、ローカルの状態を更新
+            setProducts(products.filter(product => !selectedProducts.includes(product.id)));
+            setSelectedProducts([]);
+        } catch (err) {
+            console.error('Error bulk deleting products:', err);
+            setError('一括削除に失敗しました');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    // 単一の作品選択を切り替え
+    const toggleSelectProduct = (productId) => {
+        setSelectedProducts(prev =>
+            prev.includes(productId)
+                ? prev.filter(id => id !== productId)
+                : [...prev, productId]
+        );
+    };
+
+    // 現在表示中のページの全作品選択を切り替え
+    const toggleSelectAllOnPage = () => {
+        const visibleProductIds = getVisibleResults().map(product => product.id);
+        const allSelected = visibleProductIds.every(id => selectedProducts.includes(id));
+
+        if (allSelected) {
+            // 全て選択済みの場合は解除
+            setSelectedProducts(prev => prev.filter(id => !visibleProductIds.includes(id)));
+        } else {
+            // 一部または未選択の場合は全て選択
+            setSelectedProducts(prev => {
+                const newSelected = [...prev];
+                visibleProductIds.forEach(id => {
+                    if (!newSelected.includes(id)) {
+                        newSelected.push(id);
+                    }
+                });
+                return newSelected;
+            });
+        }
+    };
+
+    // 全作品選択を切り替え（全ページ）
+    const toggleSelectAll = () => {
+        const allProductIds = filteredProducts.map(product => product.id);
+        const allSelected = allProductIds.every(id => selectedProducts.includes(id));
+
+        if (allSelected) {
+            setSelectedProducts([]);
+        } else {
+            setSelectedProducts(allProductIds);
         }
     };
 
@@ -400,6 +489,44 @@ export default function ProductsAdminPage() {
                 </div>
             </div>
 
+            {/* 選択と一括削除ボタン */}
+            {initialLoad && filteredProducts.length > 0 && (
+                <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <button
+                            onClick={toggleSelectAllOnPage}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                            このページの作品を{getVisibleResults().every(p => selectedProducts.includes(p.id)) ? '解除' : '選択'}
+                        </button>
+                        <button
+                            onClick={toggleSelectAll}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                            全作品を{filteredProducts.every(p => selectedProducts.includes(p.id)) ? '解除' : '選択'}
+                        </button>
+                        {selectedProducts.length > 0 && (
+                            <span className="text-sm text-gray-600">
+                                {selectedProducts.length}件選択中
+                            </span>
+                        )}
+                    </div>
+                    {selectedProducts.length > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={isDeleting}
+                            className={`flex items-center px-4 py-2 text-sm font-medium text-white rounded-md ${isDeleting
+                                ? 'bg-red-300 cursor-not-allowed'
+                                : 'bg-red-600 hover:bg-red-700'
+                                }`}
+                        >
+                            <Trash2 size={16} className="mr-2" />
+                            {isDeleting ? '削除中...' : `選択した作品を削除 (${selectedProducts.length})`}
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* 初回ロード前の表示 */}
             {!initialLoad && !loading && (
                 <div className="text-center py-8 bg-white rounded-lg shadow-sm border border-gray-200">
@@ -523,6 +650,7 @@ export default function ProductsAdminPage() {
                             <div className="relative overflow-auto max-w-full">
                                 <table className="w-full table-fixed border-collapse">
                                     <colgroup>
+                                        <col className="w-12" />
                                         <col className="w-20" />
                                         <col className="w-64 min-w-[12rem] max-w-lg" />
                                         <col className="w-32" />
@@ -533,6 +661,9 @@ export default function ProductsAdminPage() {
                                     </colgroup>
                                     <thead className="bg-gray-50">
                                         <tr>
+                                            <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                選択
+                                            </th>
                                             <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 サムネ
                                             </th>
@@ -560,8 +691,22 @@ export default function ProductsAdminPage() {
                                         {getVisibleResults().map((product) => {
                                             const missingInfo = checkMissingFields(product);
                                             const excludedActorsInfo = checkExcludedActors(product);
+                                            const isSelected = selectedProducts.includes(product.id);
                                             return (
-                                                <tr key={product.id} className={`hover:bg-gray-50 ${excludedActorsInfo.hasExcludedActors ? 'bg-purple-50' : ''}`}>
+                                                <tr
+                                                    key={product.id}
+                                                    className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' :
+                                                        excludedActorsInfo.hasExcludedActors ? 'bg-purple-50' : ''
+                                                        }`}
+                                                >
+                                                    <td className="py-3 px-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => toggleSelectProduct(product.id)}
+                                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                        />
+                                                    </td>
                                                     <td className="py-3 px-2">
                                                         {product.thumbnailUrl ? (
                                                             <img
