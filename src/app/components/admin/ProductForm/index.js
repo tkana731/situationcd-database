@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, Timestamp, collection, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, collection, writeBatch } from 'firebase/firestore';
 import { getAllBonuses } from '../../../../lib/firebase/bonuses';
 import Link from 'next/link';
 import { db } from '../../../../lib/firebase/config';
@@ -71,6 +71,9 @@ export default function ProductForm({ productId }) {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
+
+    // 削除状態の追加
+    const [deleting, setDeleting] = useState(false);
 
     // 検索URLを管理
     const [dlsiteSearchUrl, setDlsiteSearchUrl] = useState(null);
@@ -403,6 +406,38 @@ export default function ProductForm({ productId }) {
         }
     };
 
+    // 削除処理
+    const handleDelete = async () => {
+        if (!window.confirm(`「${product.title}」を削除してもよろしいですか？この操作は取り消せません。`)) {
+            return;
+        }
+
+        setDeleting(true);
+        setError(null);
+        setSuccessMessage('');
+
+        try {
+            const docRef = doc(db, 'products', productId);
+            await deleteDoc(docRef);
+
+            // タグと声優情報を再計算
+            await recalculateTagCounts(db);
+            await recalculateActorCounts(db);
+
+            setSuccessMessage('作品を削除しました');
+
+            // 作品一覧ページにリダイレクト
+            setTimeout(() => {
+                router.push('/admin/products');
+            }, 1500);
+        } catch (err) {
+            console.error('Error deleting product:', err);
+            setError('削除に失敗しました');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     const bonusSectionProps = {
         allBonuses,
         selectedBonuses,
@@ -485,22 +520,36 @@ export default function ProductForm({ productId }) {
                     <BonusSection {...bonusSectionProps} />
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                    <button
-                        type="button"
-                        onClick={() => router.push('/admin/products')}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                        disabled={saving}
-                    >
-                        キャンセル
-                    </button>
-                    <button
-                        type="submit"
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-300"
-                        disabled={saving}
-                    >
-                        {saving ? '保存中...' : (isNewProduct ? '登録する' : '更新する')}
-                    </button>
+                <div className="flex justify-between items-center pt-4 border-t">
+                    <div>
+                        {!isNewProduct && (
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                disabled={deleting || saving}
+                                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:bg-red-300"
+                            >
+                                {deleting ? '削除中...' : '作品を削除'}
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex space-x-3">
+                        <button
+                            type="button"
+                            onClick={() => router.push('/admin/products')}
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                            disabled={saving || deleting}
+                        >
+                            キャンセル
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-300"
+                            disabled={saving || deleting}
+                        >
+                            {saving ? '保存中...' : (isNewProduct ? '登録する' : '更新する')}
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
