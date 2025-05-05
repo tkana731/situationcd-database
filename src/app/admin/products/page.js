@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { db } from '../../../lib/firebase/config'; // 共通のFirebase設定を使用
 import { collection, getDocs, doc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
 import { getAllActors } from '../../../lib/firebase/products';
-import { Search } from 'lucide-react';
+import { Search, Calendar } from 'lucide-react';
 
 export default function ProductsAdminPage() {
     const [products, setProducts] = useState([]);
@@ -16,9 +16,20 @@ export default function ProductsAdminPage() {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedActor, setSelectedActor] = useState('');
+    const [selectedYear, setSelectedYear] = useState(''); // 発売年フィルタを追加
     const [actors, setActors] = useState([]);
     const [initialLoad, setInitialLoad] = useState(false); // 初回ロードフラグを追加
     const router = useRouter();
+
+    // 発売年の選択肢を生成する関数
+    const generateYearOptions = () => {
+        const currentYear = new Date().getFullYear();
+        const years = [];
+        for (let year = currentYear; year >= 2010; year--) {
+            years.push(year);
+        }
+        return years;
+    };
 
     // 初期データ読み込み（声優データのみ）
     useEffect(() => {
@@ -36,7 +47,7 @@ export default function ProductsAdminPage() {
     }, []);
 
     // 作品リストの取得
-    const fetchProducts = async (actorFilter = null) => {
+    const fetchProducts = async (actorFilter = null, yearFilter = null) => {
         setLoading(true);
         setError(null);
 
@@ -45,12 +56,32 @@ export default function ProductsAdminPage() {
 
             let productsQuery;
 
-            if (actorFilter && actorFilter !== '') {
+            if (actorFilter && actorFilter !== '' && yearFilter && yearFilter !== '') {
+                // 声優と発売年の両方でフィルタ
+                const startDate = `${yearFilter}-01-01`;
+                const endDate = `${yearFilter}-12-31`;
+                productsQuery = query(
+                    collection(db, 'products'),
+                    where('cast', 'array-contains', actorFilter),
+                    where('releaseDate', '>=', startDate),
+                    where('releaseDate', '<=', endDate)
+                );
+            } else if (actorFilter && actorFilter !== '') {
                 // 声優でフィルタ
                 productsQuery = query(
                     collection(db, 'products'),
                     where('cast', 'array-contains', actorFilter),
                     orderBy('updatedAt', 'desc')
+                );
+            } else if (yearFilter && yearFilter !== '') {
+                // 発売年でフィルタ
+                const startDate = `${yearFilter}-01-01`;
+                const endDate = `${yearFilter}-12-31`;
+                productsQuery = query(
+                    collection(db, 'products'),
+                    where('releaseDate', '>=', startDate),
+                    where('releaseDate', '<=', endDate),
+                    orderBy('releaseDate', 'desc')
                 );
             } else {
                 // 全件取得
@@ -109,12 +140,19 @@ export default function ProductsAdminPage() {
     const handleActorFilterChange = async (e) => {
         const actor = e.target.value;
         setSelectedActor(actor);
-        await fetchProducts(actor);
+        await fetchProducts(actor, selectedYear);
+    };
+
+    // 発売年フィルタの変更処理
+    const handleYearFilterChange = async (e) => {
+        const year = e.target.value;
+        setSelectedYear(year);
+        await fetchProducts(selectedActor, year);
     };
 
     // 作品一覧の読み込みボタンを追加
     const handleLoadProducts = () => {
-        fetchProducts(selectedActor);
+        fetchProducts(selectedActor, selectedYear);
     };
 
     // タイトル検索フィルタ処理
@@ -147,7 +185,7 @@ export default function ProductsAdminPage() {
 
             {/* フィルタセクション */}
             <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* タイトル検索 */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -183,6 +221,25 @@ export default function ProductsAdminPage() {
                             ))}
                         </select>
                     </div>
+
+                    {/* 発売年フィルタ */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            発売年フィルタ
+                        </label>
+                        <select
+                            value={selectedYear}
+                            onChange={handleYearFilterChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">すべての年</option>
+                            {generateYearOptions().map((year) => (
+                                <option key={year} value={year}>
+                                    {year}年
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -211,8 +268,16 @@ export default function ProductsAdminPage() {
             {initialLoad && !loading && (
                 <>
                     <div className="mb-4 text-sm text-gray-600">
-                        {selectedActor ? (
-                            <p>声優「{selectedActor}」の作品: {filteredProducts.length}件</p>
+                        {selectedActor || selectedYear ? (
+                            <p>
+                                {selectedActor && selectedYear ? (
+                                    `声優「${selectedActor}」の${selectedYear}年作品: ${filteredProducts.length}件`
+                                ) : selectedActor ? (
+                                    `声優「${selectedActor}」の作品: ${filteredProducts.length}件`
+                                ) : (
+                                    `${selectedYear}年の作品: ${filteredProducts.length}件`
+                                )}
+                            </p>
                         ) : (
                             <p>全作品: {filteredProducts.length}件</p>
                         )}
@@ -220,7 +285,7 @@ export default function ProductsAdminPage() {
 
                     {filteredProducts.length === 0 ? (
                         <p className="text-gray-500 text-center py-8">
-                            {searchQuery || selectedActor ? '条件に一致する作品はありません' : '登録されている作品はありません'}
+                            {searchQuery || selectedActor || selectedYear ? '条件に一致する作品はありません' : '登録されている作品はありません'}
                         </p>
                     ) : (
                         <div className="relative overflow-auto max-w-full">
