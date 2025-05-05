@@ -37,6 +37,23 @@ const SalesInfoSection = ({ product, handleChange, dlsiteSearchUrl, pokedoraSear
                 </div>
 
                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        DLsiteアフィリエイトURL
+                    </label>
+                    <input
+                        type="url"
+                        name="dlafUrl"
+                        value={product.dlafUrl || ''}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://affiliate.dlsite.com/..."
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                        アフィリエイトリンクを入力してください。このURLが優先的に使用されます。
+                    </p>
+                </div>
+
+                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
                         サムネイル画像URL
                         {product.dlsiteUrl && (

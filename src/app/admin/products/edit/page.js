@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import ProductForm from '@/app/components/admin/ProductForm';  // これでindex.jsが読み込まれます
+import ProductForm from '../../../components/admin/ProductForm';
 
 export default function EditProductPage() {
     const searchParams = useSearchParams();

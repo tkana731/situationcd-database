@@ -18,7 +18,7 @@ export default function ProductForm({ productId }) {
     const router = useRouter();
     const isNewProduct = productId === 'new';
 
-    // 作品データの状態
+    // 作品データの状態 - dlafUrlを追加
     const [product, setProduct] = useState({
         title: '',
         series: '',
@@ -28,6 +28,7 @@ export default function ProductForm({ productId }) {
         tags: [],
         thumbnailUrl: '',
         dlsiteUrl: '',
+        dlafUrl: '', // DLsiteアフィリエイトリンク
         pocketdramaUrl: '',
         stellaplayerUrl: ''
     });
@@ -65,20 +66,19 @@ export default function ProductForm({ productId }) {
     // 配列型フィールドの入力値を別で管理
     const [tagsInput, setTagsInput] = useState('');
 
+    // 状態管理
     const [loading, setLoading] = useState(!isNewProduct);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
 
-    // DLsiteの検索URL
+    // 検索URLを管理
     const [dlsiteSearchUrl, setDlsiteSearchUrl] = useState(null);
-    // ポケドラの検索URL
     const [pokedoraSearchUrl, setPokedoraSearchUrl] = useState(null);
 
     // タイトルが変更されたら検索URL群を更新
     useEffect(() => {
         if (product.title) {
-            // ヘルパー関数内で直接URLを構築
             const getDLsiteSearchUrl = (title) => {
                 if (!title) return null;
                 let encodedTitle = encodeURIComponent(title);
@@ -149,7 +149,8 @@ export default function ProductForm({ productId }) {
                         ...data,
                         releaseDate: formattedReleaseDate,
                         cast: cast,
-                        tags: tags
+                        tags: tags,
+                        dlafUrl: data.dlafUrl || '' // DLsiteアフィリエイトリンクも読み込む
                     };
 
                     setProduct(processedProduct);
@@ -472,7 +473,7 @@ export default function ProductForm({ productId }) {
                         handleTagsChange={handleTagsChange}
                     />
 
-                    {/* 販売情報 */}
+                    {/* 販売情報 - dlafUrlを追加 */}
                     <SalesInfoSection
                         product={product}
                         handleChange={handleChange}
