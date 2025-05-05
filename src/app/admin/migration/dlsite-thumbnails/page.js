@@ -35,28 +35,41 @@ export default function DLsiteThumbnailMigrationPage() {
         if (!dlsiteUrl) return null;
 
         // DLsiteがるまにURLからproduct_idを抽出
-        const match = dlsiteUrl.match(/product_id\/(BJ\d+)\.html/);
+        const match = dlsiteUrl.match(/product_id\/(BJ\d+|RJ\d+)\.html/);
         if (!match) return null;
 
         const productId = match[1];
+        const isGirls = productId.startsWith('BJ');
 
-        // BJ609911 → 609911、BJ01923873 → 1923873 のように数値に変換
-        const baseId = parseInt(productId.substring(2));
-        const roundedBase = Math.ceil(baseId / 1000) * 1000;
+        // RJかBJかで数値形式の処理を分ける
+        if (isGirls) {
+            // BJの場合（既存の処理）
+            const baseId = parseInt(productId.substring(2));
+            const roundedBase = Math.ceil(baseId / 1000) * 1000;
 
-        // folderNameの生成
-        let folderName;
-        // product_id が以下のようなパターンかチェック
-        if (productId.match(/^BJ0/)) {
-            // BJ01852219のパターン：先頭の0を維持して8桁にパディング
-            folderName = `BJ${roundedBase.toString().padStart(8, '0')}`;
+            // folderNameの生成
+            let folderName;
+            if (productId.match(/^BJ0/)) {
+                // BJ01852219のパターン：先頭の0を維持して8桁にパディング
+                folderName = `BJ${roundedBase.toString().padStart(8, '0')}`;
+            } else {
+                // BJ609911のパターン：先頭の0を削除
+                folderName = `BJ${roundedBase}`;
+            }
+
+            // サムネイル画像URLを生成（BJ用）
+            return `https://img.dlsite.jp/modpub/images2/work/books/${folderName}/${productId}_img_main.jpg`;
         } else {
-            // BJ609911のパターン：先頭の0を削除
-            folderName = `BJ${roundedBase}`;
-        }
+            // RJの場合（新規追加）
+            const baseId = parseInt(productId.substring(2));
+            const roundedBase = Math.ceil(baseId / 1000) * 1000;
 
-        // サムネイル画像URLを生成
-        return `https://img.dlsite.jp/modpub/images2/work/books/${folderName}/${productId}_img_main.jpg`;
+            // folderNameの生成
+            const folderName = `RJ${roundedBase}`;
+
+            // サムネイル画像URLを生成（RJ用）
+            return `https://img.dlsite.jp/modpub/images2/work/doujin/${folderName}/${productId}_img_main.jpg`;
+        }
     };
 
     // マイグレーション処理
@@ -89,12 +102,10 @@ export default function DLsiteThumbnailMigrationPage() {
             querySnapshot.forEach(docSnap => {
                 const data = docSnap.data();
                 // thumbnailUrlが空文字列、null、未定義の場合に対象とする
-                //if (!data.thumbnailUrl || data.thumbnailUrl === '') {
                 productsToUpdate.push({
                     id: docSnap.id,
                     data: data
                 });
-                //}
             });
 
             const stats = {
@@ -197,6 +208,13 @@ export default function DLsiteThumbnailMigrationPage() {
                         <p className="text-sm text-blue-700">
                             <strong>注意:</strong> この機能は、DLsiteがるまにURLを持っているがサムネイル画像URLが未入力の製品に対して、サムネイル画像URLを自動生成して設定します。
                         </p>
+                        <p className="text-sm text-blue-700 mt-2">
+                            対応形式：
+                        </p>
+                        <ul className="text-sm text-blue-700 ml-4 list-disc">
+                            <li>BJxxxxx形式（女性向け）</li>
+                            <li>RJxxxxx形式（同人作品）</li>
+                        </ul>
                         <p className="text-sm text-blue-700 mt-2">
                             処理は自動的に実行され、生成されたURLは直接Firestoreに保存されます。
                         </p>
