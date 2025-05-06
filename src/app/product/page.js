@@ -302,7 +302,7 @@ function ProductDetail() {
                                                 </div>
 
                                                 <div className="p-4">
-                                                    {product.dlsiteUrl ? (
+                                                    {product.dlafUrl ? (
                                                         <>
                                                             <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
                                                                 {product.bonuses && product.bonuses.dlsite && product.bonuses.dlsite.length > 0 ? (
@@ -323,7 +323,7 @@ function ProductDetail() {
                                                                 )}
                                                             </div>
                                                             <a
-                                                                href={product.dlsiteUrl}
+                                                                href={product.dlafUrl}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="block w-full bg-[#052A83] hover:bg-[#041e61] text-white text-center py-3 rounded-md transition-colors font-medium"

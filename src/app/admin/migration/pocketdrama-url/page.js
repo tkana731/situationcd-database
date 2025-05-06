@@ -5,16 +5,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { db } from '../../../../lib/firebase/config';
-import {
-    collection,
-    getDocs,
-    doc,
-    updateDoc,
-    writeBatch,
-    query,
-    where
-} from 'firebase/firestore';
 import { readFileAsText, parseCSV } from '../../../../app/components/admin/import/csvHelpers';
+import { migrateProductUrls } from '../../../../lib/firebase/urlMigrationHelper';
 
 export default function PocketdramaUrlMigrationPage() {
     const [loading, setLoading] = useState(false);
@@ -32,81 +24,6 @@ export default function PocketdramaUrlMigrationPage() {
             ...prev,
             `${new Date().toLocaleTimeString()}: ${message}`
         ]);
-    };
-
-    // レーベンシュタイン距離を計算する関数
-    const levenshteinDistance = (a, b) => {
-        const matrix = Array(b.length + 1).fill().map(() => Array(a.length + 1).fill(0));
-
-        for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
-        for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
-
-        for (let j = 1; j <= b.length; j++) {
-            for (let i = 1; i <= a.length; i++) {
-                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-                matrix[j][i] = Math.min(
-                    matrix[j][i - 1] + 1, // 挿入
-                    matrix[j - 1][i] + 1, // 削除
-                    matrix[j - 1][i - 1] + cost // 置換
-                );
-            }
-        }
-
-        return matrix[b.length][a.length];
-    };
-
-    // 2つの文字列の類似度を計算する関数（0.0～1.0の値を返す）
-    const calculateSimilarity = (str1, str2) => {
-        if (!str1 || !str2) return 0;
-
-        // 特殊文字や余分なスペースを削除して正規化
-        const normalizeStr = (str) => {
-            // 特別なパターンを削除
-            let normalized = str;
-
-            // 【出演声優：XXX】パターン
-            const castPattern = /【出演声優：[^】]*】/g;
-            normalized = normalized.replace(castPattern, '');
-
-            // 【独占配信トラック付】のパターン削除
-            const exclusivePattern = /【独占配信トラック付】/g;
-            normalized = normalized.replace(exclusivePattern, '');
-
-            // 【CV：XXX】のパターン削除（念のため）
-            const cvPattern = /【CV：[^】]*】/g;
-            normalized = normalized.replace(cvPattern, '');
-
-            // 【出演：XXX】のパターン削除（念のため）
-            const performerPattern = /【出演：[^】]*】/g;
-            normalized = normalized.replace(performerPattern, '');
-
-            // その他の正規化処理
-            normalized = normalized.toLowerCase()
-                .replace(/[「」【】『』（）()［］\[\]]/g, '') // 括弧類を削除
-                .replace(/\s+/g, ' ') // 連続する空白を1つに圧縮
-                .replace(/(ドラマcd|シチュエーションcd)/gi, '') // ドラマCDやシチュエーションCDという表記を削除
-                .trim();
-
-            return normalized;
-        };
-
-        const normalizedStr1 = normalizeStr(str1);
-        const normalizedStr2 = normalizeStr(str2);
-
-        // 正規化前後の文字列に大きな変化があった場合のログ（デバッグ用）
-        if (str1 !== normalizedStr1 && str1.length - normalizedStr1.length > 10) {
-            // console.log(`大きな変化: "${str1}" => "${normalizedStr1}"`);
-        }
-
-        // 完全一致の場合は1.0を返す
-        if (normalizedStr1 === normalizedStr2) return 1.0;
-
-        // レーベンシュタイン距離を計算
-        const distance = levenshteinDistance(normalizedStr1, normalizedStr2);
-        const maxLength = Math.max(normalizedStr1.length, normalizedStr2.length);
-
-        // 距離を類似度に変換（1.0が完全一致、0.0が完全不一致）
-        return maxLength === 0 ? 1.0 : 1.0 - distance / maxLength;
     };
 
     // CSVファイルが選択されたときの処理
@@ -184,164 +101,31 @@ export default function PocketdramaUrlMigrationPage() {
             const content = await readFileAsText(file);
             const { header, data } = parseCSV(content);
 
-            addLog('マイグレーション処理を開始します...');
-            addLog(`類似度しきい値: ${similarityThreshold} (高いほど厳密にマッチング)`);
-
-            // pocketdramaUrlが未設定または空文字の製品のみ取得
-            const productsQuery = query(
-                collection(db, 'products'),
-                where('pocketdramaUrl', 'in', ['', null])
-            );
-
-            const productsSnapshot = await getDocs(productsQuery);
-            const targetProducts = productsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            addLog(`Firestoreからポケットドラマ未設定の製品${targetProducts.length}件を取得しました`);
-
-            // 統計情報の初期化
-            const stats = {
-                total: data.length,
-                matched: 0,
-                updated: 0,
-                skipped: 0,
-                noMatch: 0,
-                alreadySet: 0,
-                ambiguous: 0, // 複数の候補がある場合
-                specialPatternRemoved: 0 // 特別なパターンを削除した件数
+            // ポケドラURL更新用の設定
+            const config = {
+                urlField: 'pocketdramaUrl',
+                titleColumn: 'product_title',
+                urlColumn: 'thum_inner href',
+                similarityThreshold,
+                removePatterns: [
+                    /【出演声優：[^】]*】/g,
+                    /【独占配信トラック付】/g,
+                    /【CV：[^】]*】/g,
+                    /【出演：[^】]*】/g
+                ],
+                specialPatternDescriptions: [
+                    '【出演声優：XXX】',
+                    '【独占配信トラック付】',
+                    '【CV：XXX】',
+                    '【出演：XXX】'
+                ]
             };
 
-            // バッチ処理の準備
-            let batch = writeBatch(db);
-            let operationCount = 0;
-            const MAX_BATCH_SIZE = 500;
+            // 共通のマイグレーション処理を実行
+            const result = await migrateProductUrls(db, data, config, addLog);
 
-            // CSV内の各行を処理
-            for (let i = 0; i < data.length; i++) {
-                const row = data[i];
-                const csvTitle = row['product_title'];
-                const pocketdramaUrl = row['thum_inner href'];
-
-                // タイトルまたはURLが空の場合はスキップ
-                if (!csvTitle || !pocketdramaUrl) {
-                    addLog(`行 ${i + 2}: タイトルまたはポケドラURLが空です。スキップします。`);
-                    stats.skipped++;
-                    continue;
-                }
-
-                // 特別なパターンの検出とログ
-                let hasSpecialPattern = false;
-                let cleanedTitle = csvTitle;
-
-                // 【出演声優：XXX】パターン
-                if (csvTitle.includes('【出演声優：')) {
-                    cleanedTitle = cleanedTitle.replace(/【出演声優：[^】]*】/g, '');
-                    hasSpecialPattern = true;
-                }
-
-                // 【独占配信トラック付】パターン
-                if (csvTitle.includes('【独占配信トラック付】')) {
-                    cleanedTitle = cleanedTitle.replace(/【独占配信トラック付】/g, '');
-                    hasSpecialPattern = true;
-                }
-
-                // 【CV：XXX】パターン
-                if (csvTitle.includes('【CV：')) {
-                    cleanedTitle = cleanedTitle.replace(/【CV：[^】]*】/g, '');
-                    hasSpecialPattern = true;
-                }
-
-                // 【出演：XXX】パターン
-                if (csvTitle.includes('【出演：')) {
-                    cleanedTitle = cleanedTitle.replace(/【出演：[^】]*】/g, '');
-                    hasSpecialPattern = true;
-                }
-
-                if (hasSpecialPattern) {
-                    addLog(`行 ${i + 2}: 特別なパターンを削除: "${csvTitle}" → "${cleanedTitle}"`);
-                    stats.specialPatternRemoved++;
-                }
-
-                // 類似度に基づいてマッチングする製品を検索
-                const matchCandidates = targetProducts
-                    .map(product => ({
-                        product,
-                        similarity: calculateSimilarity(product.title, csvTitle)
-                    }))
-                    .filter(candidate => candidate.similarity >= similarityThreshold)
-                    .sort((a, b) => b.similarity - a.similarity); // 類似度の降順でソート
-
-                if (matchCandidates.length === 0) {
-                    addLog(`行 ${i + 2}: タイトル "${csvTitle}" に一致する製品が見つかりません。`);
-                    stats.noMatch++;
-                    continue;
-                }
-
-                if (matchCandidates.length > 1 &&
-                    matchCandidates[0].similarity === matchCandidates[1].similarity) {
-                    // 最も類似度が高い複数の候補がある場合（同率一位）
-                    addLog(`行 ${i + 2}: タイトル "${csvTitle}" に対して複数の候補があります。スキップします。`);
-                    addLog(`  候補: ${matchCandidates.slice(0, 3).map(c => `"${c.product.title}" (類似度: ${c.similarity.toFixed(3)})`).join(', ')}`);
-                    stats.ambiguous++;
-                    continue;
-                }
-
-                // 最も類似度が高い製品を選択
-                const matchedCandidate = matchCandidates[0];
-                const matchedProduct = matchedCandidate.product;
-
-                stats.matched++;
-
-                addLog(`行 ${i + 2}: タイトル "${csvTitle}" がマッチしました。`);
-                addLog(`  マッチした製品: "${matchedProduct.title}" (類似度: ${matchedCandidate.similarity.toFixed(3)})`);
-
-                // ポケドラURLを更新
-                const docRef = doc(db, 'products', matchedProduct.id);
-                batch.update(docRef, {
-                    pocketdramaUrl: pocketdramaUrl,
-                    updatedAt: new Date()
-                });
-
-                stats.updated++;
-                addLog(`行 ${i + 2}: 製品 "${matchedProduct.title}" のポケドラURLを更新しました。`);
-                addLog(`  新しいURL: ${pocketdramaUrl}`);
-
-                operationCount++;
-
-                // バッチサイズの上限に達したら一旦コミット
-                if (operationCount >= MAX_BATCH_SIZE) {
-                    addLog(`バッチ処理を実行します (${operationCount}件)...`);
-                    await batch.commit();
-                    batch = writeBatch(db);
-                    operationCount = 0;
-                }
-
-                // 進捗ログ
-                if ((i + 1) % 10 === 0 || i === data.length - 1) {
-                    addLog(`${i + 1}/${data.length} 件処理中...`);
-                }
-            }
-
-            // 残りのバッチをコミット
-            if (operationCount > 0) {
-                addLog(`残りのバッチ処理を実行します (${operationCount}件)...`);
-                await batch.commit();
-            }
-
-            setStats(stats);
-            setSuccess(`マイグレーション完了: ${stats.updated}件の製品のポケドラURLを更新しました`);
-            const completeMessage = `マイグレーション完了: 
-                処理済み ${stats.total}件、
-                マッチング ${stats.matched}件、 
-                更新 ${stats.updated}件、
-                特別パターン削除 ${stats.specialPatternRemoved}件、
-                スキップ ${stats.skipped}件、
-                一致なし ${stats.noMatch}件、
-                既設定 ${stats.alreadySet}件、
-                曖昧な一致 ${stats.ambiguous}件`;
-            addLog(completeMessage);
+            setStats(result);
+            setSuccess(`マイグレーション完了: ${result.updated}件の製品のポケドラURLを更新しました`);
         } catch (err) {
             console.error('Error during migration:', err);
             setError('マイグレーション中にエラーが発生しました: ' + err.message);
