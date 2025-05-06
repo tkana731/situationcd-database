@@ -253,6 +253,14 @@ export default function AdminLayout({ children }) {
                                             >
                                                 ポケドラURL更新
                                             </Link>
+                                            <Link
+                                                href="/admin/migration/stellaplayer-url"
+                                                className={`block px-4 py-2 text-sm ${pathname === '/admin/migration/stellaplayer-url' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                                                    }`}
+                                                onClick={() => setMigrationDropdownOpen(false)}
+                                            >
+                                                ステラプレイヤーURL更新
+                                            </Link>
                                         </div>
                                     )}
                                 </div>

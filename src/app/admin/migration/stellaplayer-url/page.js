@@ -1,4 +1,4 @@
-// src/app/admin/migration/pocketdrama-url/page.js
+// src/app/admin/migration/stellaplayer-url/page.js
 
 'use client';
 
@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import { readFileAsText, parseCSV } from '../../../../app/components/admin/import/csvHelpers';
 
-export default function PocketdramaUrlMigrationPage() {
+export default function StellaplayerUrlMigrationPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
@@ -61,24 +61,16 @@ export default function PocketdramaUrlMigrationPage() {
 
         // 特殊文字や余分なスペースを削除して正規化
         const normalizeStr = (str) => {
-            // 特別なパターンを削除
+            // ステラプレイヤー特有のパターン削除
             let normalized = str;
 
-            // 【出演声優：XXX】パターン
-            const castPattern = /【出演声優：[^】]*】/g;
-            normalized = normalized.replace(castPattern, '');
-
-            // 【独占配信トラック付】のパターン削除
-            const exclusivePattern = /【独占配信トラック付】/g;
-            normalized = normalized.replace(exclusivePattern, '');
-
-            // 【CV：XXX】のパターン削除（念のため）
-            const cvPattern = /【CV：[^】]*】/g;
+            // (CV：XXX)のパターンを削除
+            const cvPattern = /\(CV：[^)]*\)/g;
             normalized = normalized.replace(cvPattern, '');
 
-            // 【出演：XXX】のパターン削除（念のため）
-            const performerPattern = /【出演：[^】]*】/g;
-            normalized = normalized.replace(performerPattern, '');
+            // 【ステラワース限定版】のパターンを削除
+            const stellaworksPattern = /【ステラワース限定版】/g;
+            normalized = normalized.replace(stellaworksPattern, '');
 
             // その他の正規化処理
             normalized = normalized.toLowerCase()
@@ -132,13 +124,13 @@ export default function PocketdramaUrlMigrationPage() {
                 const { header, data } = parseCSV(content);
 
                 // タイトル列とURL列が含まれているか確認
-                if (!header.includes('product_title')) {
-                    setError('CSVファイルにタイトル列(product_title)が見つかりません。');
+                if (!header.includes('c-card__name')) {
+                    setError('CSVファイルにタイトル列(c-card__name)が見つかりません。');
                     return;
                 }
 
-                if (!header.includes('thum_inner href')) {
-                    setError('CSVファイルにURL列(thum_inner href)が見つかりません。');
+                if (!header.includes('c-card href')) {
+                    setError('CSVファイルにURL列(c-card href)が見つかりません。');
                     return;
                 }
 
@@ -169,7 +161,7 @@ export default function PocketdramaUrlMigrationPage() {
             return;
         }
 
-        if (!confirm(`CSVファイルのタイトルをマッチングして、ポケットドラマCDのURLを更新しますか？\n\n類似度しきい値: ${similarityThreshold} (高いほど厳密にマッチング)`)) {
+        if (!confirm(`CSVファイルのタイトルをマッチングして、ステラプレイヤーのURLを更新しますか？\n\n類似度しきい値: ${similarityThreshold} (高いほど厳密にマッチング)`)) {
             return;
         }
 
@@ -187,19 +179,27 @@ export default function PocketdramaUrlMigrationPage() {
             addLog('マイグレーション処理を開始します...');
             addLog(`類似度しきい値: ${similarityThreshold} (高いほど厳密にマッチング)`);
 
-            // pocketdramaUrlが未設定または空文字の製品のみ取得
-            const productsQuery = query(
+            // stellaplayerUrlが有効な値（空でも nullでもない）の製品のIDリストを取得
+            const filledUrlQuery = query(
                 collection(db, 'products'),
-                where('pocketdramaUrl', 'in', ['', null])
+                where('stellaplayerUrl', '>', '') // 空文字より大きい = 何か値が入っている
             );
+            const filledUrlSnap = await getDocs(filledUrlQuery);
+            const filledUrlIds = new Set(filledUrlSnap.docs.map(doc => doc.id));
 
-            const productsSnapshot = await getDocs(productsQuery);
-            const targetProducts = productsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            // すべての製品を取得
+            const allProductsQuery = query(collection(db, 'products'));
+            const allProductsSnap = await getDocs(allProductsQuery);
 
-            addLog(`Firestoreからポケットドラマ未設定の製品${targetProducts.length}件を取得しました`);
+            // 値が入っているIDを除外してターゲット製品を取得
+            const targetProducts = allProductsSnap.docs
+                .filter(doc => !filledUrlIds.has(doc.id))
+                .map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+            addLog(`FirestoreからステラプレイヤーURL未設定の製品${targetProducts.length}件を取得しました`);
 
             // 統計情報の初期化
             const stats = {
@@ -210,7 +210,8 @@ export default function PocketdramaUrlMigrationPage() {
                 noMatch: 0,
                 alreadySet: 0,
                 ambiguous: 0, // 複数の候補がある場合
-                specialPatternRemoved: 0 // 特別なパターンを削除した件数
+                cvPatternRemoved: 0, // CV：パターンを削除した件数
+                stellaworksPatternRemoved: 0 // ステラワース限定版パターンを削除した件数
             };
 
             // バッチ処理の準備
@@ -221,47 +222,38 @@ export default function PocketdramaUrlMigrationPage() {
             // CSV内の各行を処理
             for (let i = 0; i < data.length; i++) {
                 const row = data[i];
-                const csvTitle = row['product_title'];
-                const pocketdramaUrl = row['thum_inner href'];
+                const csvTitle = row['c-card__name'];
+                const stellaplayerUrl = row['c-card href'];
 
                 // タイトルまたはURLが空の場合はスキップ
-                if (!csvTitle || !pocketdramaUrl) {
-                    addLog(`行 ${i + 2}: タイトルまたはポケドラURLが空です。スキップします。`);
+                if (!csvTitle || !stellaplayerUrl) {
+                    addLog(`行 ${i + 2}: タイトルまたはステラプレイヤーURLが空です。スキップします。`);
                     stats.skipped++;
                     continue;
                 }
 
-                // 特別なパターンの検出とログ
+                // 特別なパターンの検出と削除
                 let hasSpecialPattern = false;
                 let cleanedTitle = csvTitle;
 
-                // 【出演声優：XXX】パターン
-                if (csvTitle.includes('【出演声優：')) {
-                    cleanedTitle = cleanedTitle.replace(/【出演声優：[^】]*】/g, '');
+                // (CV：XXX)パターンの検出と削除
+                const cvPattern = /\(CV：[^)]*\)/g;
+                if (cvPattern.test(csvTitle)) {
+                    cleanedTitle = cleanedTitle.replace(cvPattern, '').trim();
                     hasSpecialPattern = true;
+                    stats.cvPatternRemoved++;
                 }
 
-                // 【独占配信トラック付】パターン
-                if (csvTitle.includes('【独占配信トラック付】')) {
-                    cleanedTitle = cleanedTitle.replace(/【独占配信トラック付】/g, '');
+                // 【ステラワース限定版】パターンの検出と削除
+                const stellaworksPattern = /【ステラワース限定版】/g;
+                if (stellaworksPattern.test(cleanedTitle)) {
+                    cleanedTitle = cleanedTitle.replace(stellaworksPattern, '').trim();
                     hasSpecialPattern = true;
-                }
-
-                // 【CV：XXX】パターン
-                if (csvTitle.includes('【CV：')) {
-                    cleanedTitle = cleanedTitle.replace(/【CV：[^】]*】/g, '');
-                    hasSpecialPattern = true;
-                }
-
-                // 【出演：XXX】パターン
-                if (csvTitle.includes('【出演：')) {
-                    cleanedTitle = cleanedTitle.replace(/【出演：[^】]*】/g, '');
-                    hasSpecialPattern = true;
+                    stats.stellaworksPatternRemoved++;
                 }
 
                 if (hasSpecialPattern) {
                     addLog(`行 ${i + 2}: 特別なパターンを削除: "${csvTitle}" → "${cleanedTitle}"`);
-                    stats.specialPatternRemoved++;
                 }
 
                 // 類似度に基づいてマッチングする製品を検索
@@ -297,16 +289,16 @@ export default function PocketdramaUrlMigrationPage() {
                 addLog(`行 ${i + 2}: タイトル "${csvTitle}" がマッチしました。`);
                 addLog(`  マッチした製品: "${matchedProduct.title}" (類似度: ${matchedCandidate.similarity.toFixed(3)})`);
 
-                // ポケドラURLを更新
+                // ステラプレイヤーURLを更新
                 const docRef = doc(db, 'products', matchedProduct.id);
                 batch.update(docRef, {
-                    pocketdramaUrl: pocketdramaUrl,
+                    stellaplayerUrl: stellaplayerUrl,
                     updatedAt: new Date()
                 });
 
                 stats.updated++;
-                addLog(`行 ${i + 2}: 製品 "${matchedProduct.title}" のポケドラURLを更新しました。`);
-                addLog(`  新しいURL: ${pocketdramaUrl}`);
+                addLog(`行 ${i + 2}: 製品 "${matchedProduct.title}" のステラプレイヤーURLを更新しました。`);
+                addLog(`  新しいURL: ${stellaplayerUrl}`);
 
                 operationCount++;
 
@@ -331,12 +323,13 @@ export default function PocketdramaUrlMigrationPage() {
             }
 
             setStats(stats);
-            setSuccess(`マイグレーション完了: ${stats.updated}件の製品のポケドラURLを更新しました`);
+            setSuccess(`マイグレーション完了: ${stats.updated}件の製品のステラプレイヤーURLを更新しました`);
             const completeMessage = `マイグレーション完了: 
                 処理済み ${stats.total}件、
                 マッチング ${stats.matched}件、 
                 更新 ${stats.updated}件、
-                特別パターン削除 ${stats.specialPatternRemoved}件、
+                CV：パターン削除 ${stats.cvPatternRemoved}件、
+                ステラワース限定版削除 ${stats.stellaworksPatternRemoved}件、
                 スキップ ${stats.skipped}件、
                 一致なし ${stats.noMatch}件、
                 既設定 ${stats.alreadySet}件、
@@ -354,7 +347,7 @@ export default function PocketdramaUrlMigrationPage() {
     return (
         <div className="bg-white shadow rounded-lg p-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">ポケドラURLマイグレーション</h1>
+                <h1 className="text-2xl font-bold">ステラプレイヤーURLマイグレーション</h1>
                 <div className="flex space-x-2">
                     <Link
                         href="/admin/products"
@@ -369,7 +362,7 @@ export default function PocketdramaUrlMigrationPage() {
                 <div className="flex">
                     <div className="ml-3">
                         <p className="text-sm text-blue-700">
-                            <strong>注意:</strong> この機能はポケドラCSVファイルのタイトル列と既存の製品データをマッチングして、ポケットドラマCDのURLを更新します。
+                            <strong>注意:</strong> この機能はステラプレイヤーCSVファイルのタイトル列と既存の製品データをマッチングして、ステラプレイヤーのURLを更新します。
                         </p>
                         <p className="text-sm text-blue-700 mt-2">
                             タイトルが完全に一致しない場合でも、文字列の類似度が高い場合にマッチングします。
@@ -378,20 +371,18 @@ export default function PocketdramaUrlMigrationPage() {
                             <strong>特別処理:</strong> 以下のようなパターンは自動的に削除してマッチングします：
                         </p>
                         <ul className="text-sm text-blue-700 ml-4 list-disc">
-                            <li>【出演声優：XXX】</li>
-                            <li>【独占配信トラック付】</li>
-                            <li>【CV：XXX】</li>
-                            <li>【出演：XXX】</li>
+                            <li>(CV：XXX) - 声優名を含む括弧</li>
+                            <li>【ステラワース限定版】</li>
                         </ul>
                         <p className="text-sm text-blue-700 mt-2">
                             CSVファイルには以下の列が必要です：
                         </p>
                         <ul className="text-sm text-blue-700 ml-4 list-disc">
-                            <li>タイトル列 (product_title)</li>
-                            <li>ポケドラURL列 (thum_inner href)</li>
+                            <li>タイトル列 (c-card__name)</li>
+                            <li>ステラプレイヤーURL列 (c-card href)</li>
                         </ul>
                         <p className="text-sm text-blue-700 mt-2">
-                            処理は自動的に実行され、ポケットドラマURL未設定の製品のみマッチング対象になります。
+                            処理は自動的に実行され、ステラプレイヤーURL未設定の製品のみマッチング対象になります。
                         </p>
                     </div>
                 </div>
@@ -514,7 +505,8 @@ export default function PocketdramaUrlMigrationPage() {
                                 <li className="mb-1">処理対象: {stats.total}件</li>
                                 <li className="mb-1 text-blue-600">マッチング成功: {stats.matched}件</li>
                                 <li className="mb-1 text-green-600">更新済み: {stats.updated}件</li>
-                                <li className="mb-1 text-purple-600">特別パターン削除: {stats.specialPatternRemoved}件</li>
+                                <li className="mb-1 text-purple-600">CV：パターン削除: {stats.cvPatternRemoved}件</li>
+                                <li className="mb-1 text-purple-600">ステラワース限定版削除: {stats.stellaworksPatternRemoved}件</li>
                                 <li className="mb-1 text-yellow-600">スキップ: {stats.skipped}件</li>
                                 <li className="mb-1 text-red-600">一致なし: {stats.noMatch}件</li>
                                 <li className="mb-1 text-orange-600">曖昧な一致: {stats.ambiguous}件</li>
