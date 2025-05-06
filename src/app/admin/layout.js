@@ -245,6 +245,14 @@ export default function AdminLayout({ children }) {
                                             >
                                                 DLsiteアフィリエイト生成
                                             </Link>
+                                            <Link
+                                                href="/admin/migration/pocketdrama-url"
+                                                className={`block px-4 py-2 text-sm ${pathname === '/admin/migration/pocketdrama-url' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                                                    }`}
+                                                onClick={() => setMigrationDropdownOpen(false)}
+                                            >
+                                                ポケドラURL更新
+                                            </Link>
                                         </div>
                                     )}
                                 </div>
