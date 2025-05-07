@@ -1,78 +1,28 @@
 // /src/app/page.js
 
-'use client';
+import HomePage from './HomePage';
 
-import React, { useEffect, useState } from 'react';
-import { Box } from 'lucide-react';
-import Header from './components/layout/Header';
-import Footer from './components/layout/Footer';
-import SearchBox from './components/ui/SearchBox';
-import ProductGrid from './components/ui/ProductGrid';
-import TagList from './components/ui/TagList';
-import VoiceActorList from './components/ui/VoiceActorList';
-import { getAllProducts } from '../lib/firebase/products';
-import { getAllTags } from '../lib/firebase/products';
-import { getAllActors } from '../lib/firebase/products';
+export function generateMetadata() {
+  const canonicalUrl = 'https://situationcd.com';
 
-export default function HomePage() {
-  const [newProducts, setNewProducts] = useState([]);
-  const [popularTags, setPopularTags] = useState([]);
-  const [popularActors, setPopularActors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  return {
+    title: 'シチュエーションCDデータベース | 女性向けシチュエーションCD・音声作品の情報サイト',
+    description: '女性向けシチュエーションCDの情報サイト。最新作品、人気声優、ジャンルタグから好みの作品を簡単検索。',
+    keywords: 'シチュエーションCD,シチュCD,女性向け,声優,ドラマCD',
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: 'シチュエーションCDデータベース',
+      description: '女性向けシチュエーションCDの情報サイト。最新作品、人気声優、ジャンルから検索できます。',
+      url: canonicalUrl,
+      siteName: 'シチュエーションCDデータベース',
+      locale: 'ja_JP',
+      type: 'website',
+    }
+  };
+}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        // データの取得
-        const productsData = await getAllProducts(8);
-        const tagsData = await getAllTags(10);
-        const actorsData = await getAllActors(10);
-
-        setNewProducts(productsData);
-        setPopularTags(tagsData);
-        setPopularActors(actorsData);
-      } catch (error) {
-        console.error('データの取得中にエラーが発生しました:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-
-      <main className="flex-grow">
-        <div className="container mx-auto px-4 py-8">
-          <SearchBox />
-
-          <div className="mb-12">
-            <h2 className="text-xl font-bold mb-6 flex items-center">
-              <Box size={20} className="mr-2 text-pink-500" />
-              新着作品
-            </h2>
-
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-pink-400 border-r-transparent"></div>
-                <p className="mt-4 text-gray-600">データを読み込み中...</p>
-              </div>
-            ) : (
-              <ProductGrid products={newProducts} />
-            )}
-          </div>
-
-          <TagList tags={popularTags} />
-          <VoiceActorList actors={popularActors} />
-        </div>
-      </main>
-
-      <Footer />
-    </div>
-  );
+export default function Page() {
+  return <HomePage />;
 }

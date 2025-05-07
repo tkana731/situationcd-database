@@ -18,19 +18,20 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }) {
     const resolvedParams = await params;
-
-    // プリレンダリング時にFirebaseが初期化されていない可能性があるため、
-    // デフォルト値を使用
-    const defaultProductCount = 0;
+    const year = resolvedParams.year;
+    const canonicalUrl = `https://situationcd.com/year/${encodeURIComponent(year)}`;
 
     return {
-        title: `${resolvedParams.year}年の作品一覧 | シチュエーションCDデータベース`,
-        description: `${resolvedParams.year}年に発売されたシチュエーションCDの一覧です。`,
-        keywords: `シチュエーションCD,${resolvedParams.year}年,発売作品,ドラマCD,女性向け`,
+        title: `${year}年の作品一覧 | シチュエーションCDデータベース`,
+        description: `${year}年に発売されたシチュエーションCDの一覧です。`,
+        keywords: `シチュエーションCD,${year}年,発売作品,ドラマCD,女性向け`,
+        alternates: {
+            canonical: canonicalUrl,
+        },
         openGraph: {
-            title: `${resolvedParams.year}年の作品一覧`,
-            description: `${resolvedParams.year}年に発売されたシチュエーションCDの一覧`,
-            url: `https://situationcd.com/year/${resolvedParams.year}`,
+            title: `${year}年の作品一覧`,
+            description: `${year}年に発売されたシチュエーションCDの一覧`,
+            url: canonicalUrl,
             siteName: 'シチュエーションCDデータベース',
             locale: 'ja_JP',
             type: 'website',

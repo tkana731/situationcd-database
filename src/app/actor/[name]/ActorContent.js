@@ -1,4 +1,4 @@
-// /src/app/actor/[name]/ActorContent.js
+// src/app/actor/[name]/ActorContent.js
 
 'use client';
 
@@ -7,7 +7,7 @@ import { Box, User, Tag } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import ProductGrid from '../../components/ui/ProductGrid';
 import SchemaOrg from '../../components/SchemaOrg';
-import Pagination from '../../components/ui/Pagination'; // 部品化したページネーションをインポート
+import Pagination from '../../components/ui/Pagination';
 import { searchProducts } from '../../../lib/firebase/products';
 
 function ActorDetailContent() {

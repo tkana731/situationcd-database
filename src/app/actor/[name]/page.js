@@ -27,6 +27,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
     const resolvedParams = await params;
     const actorName = decodeURIComponent(resolvedParams.name);
+    const canonicalUrl = `https://situationcd.com/actor/${encodeURIComponent(actorName)}`;
 
     return {
         title: `${actorName}の出演作品一覧 | シチュエーションCDデータベース`,
@@ -35,10 +36,13 @@ export async function generateMetadata({ params }) {
         openGraph: {
             title: `${actorName}の出演作品一覧`,
             description: `${actorName}が出演するシチュエーションCDの一覧`,
-            url: `https://situationcd.com/actor/${encodeURIComponent(actorName)}`,
+            url: canonicalUrl,
             siteName: 'シチュエーションCDデータベース',
             locale: 'ja_JP',
             type: 'website',
+        },
+        alternates: {
+            canonical: canonicalUrl,
         }
     };
 }
