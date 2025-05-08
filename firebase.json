@@ -12,7 +12,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "max-age=0"
+            "value": "max-age=3600"
           }
         ]
       }
@@ -23,13 +23,7 @@
         "destination": "/index.html"
       }
     ],
-    "redirects": [
-      {
-        "source": "/",
-        "destination": "/index.html",
-        "type": 301
-      }
-    ]
+    "trailingSlash": true
   },
   "firestore": {
     "rules": "firestore.rules",

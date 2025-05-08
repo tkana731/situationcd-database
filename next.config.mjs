@@ -7,9 +7,8 @@ const nextConfig = {
     },
     // output設定を環境に応じて切り替え
     output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
-    // 本番環境用の設定
-    // productionBrowserSourceMaps: false,
-    // swcMinify: true,
+    // 静的エクスポート時にはtrailingSlashを有効にする
+    trailingSlash: true,
 }
 
 export default nextConfig;

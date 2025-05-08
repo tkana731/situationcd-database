@@ -46,7 +46,7 @@ export const metadata = {
     shortcut: '/favicon.ico',
   },
   alternates: {
-    canonical: 'https://situationcd.com',
+    canonical: 'https://situationcd.com/',
   },
   manifest: '/site.webmanifest',
 };

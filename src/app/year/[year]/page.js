@@ -19,15 +19,13 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
     const resolvedParams = await params;
     const year = resolvedParams.year;
-    const canonicalUrl = `https://situationcd.com/year/${encodeURIComponent(year)}`;
+    // 末尾にスラッシュを追加
+    const canonicalUrl = `https://situationcd.com/year/${encodeURIComponent(year)}/`;
 
     return {
         title: `${year}年の作品一覧 | シチュエーションCDデータベース`,
         description: `${year}年に発売されたシチュエーションCDの一覧です。`,
         keywords: `シチュエーションCD,${year}年,発売作品,ドラマCD,女性向け`,
-        alternates: {
-            canonical: canonicalUrl,
-        },
         openGraph: {
             title: `${year}年の作品一覧`,
             description: `${year}年に発売されたシチュエーションCDの一覧`,
@@ -35,6 +33,10 @@ export async function generateMetadata({ params }) {
             siteName: 'シチュエーションCDデータベース',
             locale: 'ja_JP',
             type: 'website',
+        },
+        // canonicalを明示的に設定
+        alternates: {
+            canonical: canonicalUrl,
         }
     };
 }

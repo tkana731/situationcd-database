@@ -27,7 +27,8 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
     const resolvedParams = await params;
     const actorName = decodeURIComponent(resolvedParams.name);
-    const canonicalUrl = `https://situationcd.com/actor/${encodeURIComponent(actorName)}`;
+    // 末尾にスラッシュを追加
+    const canonicalUrl = `https://situationcd.com/actor/${encodeURIComponent(actorName)}/`;
 
     return {
         title: `${actorName}の出演作品一覧 | シチュエーションCDデータベース`,
