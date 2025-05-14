@@ -10,12 +10,12 @@ import SearchBox from './components/ui/SearchBox';
 import ProductGrid from './components/ui/ProductGrid';
 import TagList from './components/ui/TagList';
 import VoiceActorList from './components/ui/VoiceActorList';
-import { getAllProducts } from '../lib/firebase/products';
+import { getUpcomingProducts } from '../lib/firebase/products';
 import { getAllTags } from '../lib/firebase/products';
 import { getAllActors } from '../lib/firebase/products';
 
 export default function HomePage() {
-    const [newProducts, setNewProducts] = useState([]);
+    const [upcomingProducts, setUpcomingProducts] = useState([]);
     const [popularTags, setPopularTags] = useState([]);
     const [popularActors, setPopularActors] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -26,11 +26,11 @@ export default function HomePage() {
                 setLoading(true);
 
                 // データの取得
-                const productsData = await getAllProducts(8);
+                const upcomingData = await getUpcomingProducts(8);
                 const tagsData = await getAllTags(10);
                 const actorsData = await getAllActors(10);
 
-                setNewProducts(productsData);
+                setUpcomingProducts(upcomingData);
                 setPopularTags(tagsData);
                 setPopularActors(actorsData);
             } catch (error) {
@@ -54,7 +54,7 @@ export default function HomePage() {
                     <div className="mb-12">
                         <h2 className="text-xl font-bold mb-6 flex items-center">
                             <Box size={20} className="mr-2 text-pink-500" />
-                            新着作品
+                            近日発売予定
                         </h2>
 
                         {loading ? (
@@ -62,8 +62,12 @@ export default function HomePage() {
                                 <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-pink-400 border-r-transparent"></div>
                                 <p className="mt-4 text-gray-600">データを読み込み中...</p>
                             </div>
+                        ) : upcomingProducts.length > 0 ? (
+                            <ProductGrid products={upcomingProducts} />
                         ) : (
-                            <ProductGrid products={newProducts} />
+                            <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                                <p className="text-gray-700">発売予定の作品が見つかりませんでした</p>
+                            </div>
                         )}
                     </div>
 

@@ -612,3 +612,62 @@ export async function getAllActors(limitCount = 9999) {
         return [];
     }
 }
+
+// 直近1か月に発売される作品を取得する関数
+export async function getUpcomingProducts(limitCount = 8) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return [];
+    }
+
+    try {
+        // 現在の日付を取得
+        const today = new Date();
+        // 今日の日付をYYYY-MM-DD形式に変換
+        const todayStr = today.toISOString().split('T')[0];
+
+        // 1か月後の日付を計算
+        const nextMonth = new Date();
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        const nextMonthStr = nextMonth.toISOString().split('T')[0];
+
+        // 今日から1か月後までの発売予定作品を取得
+        const upcomingQuery = query(
+            collection(db, 'products'),
+            where('releaseDate', '>=', todayStr),
+            where('releaseDate', '<=', nextMonthStr),
+            orderBy('releaseDate', 'asc'),
+            limit(limitCount)
+        );
+
+        const querySnapshot = await getDocs(upcomingQuery);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error getting upcoming products:', error);
+
+        // エラー時の代替手段: 今後発売の作品をリリース日順に取得
+        try {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+
+            const alternativeQuery = query(
+                collection(db, 'products'),
+                where('releaseDate', '>=', todayStr),
+                orderBy('releaseDate', 'asc'),
+                limit(limitCount)
+            );
+
+            const alternativeSnapshot = await getDocs(alternativeQuery);
+            return alternativeSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+        } catch (fallbackError) {
+            console.error('Fallback query also failed:', fallbackError);
+            return [];
+        }
+    }
+}
