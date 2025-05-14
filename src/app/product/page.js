@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Info, Tag, ExternalLink, Volume2, Share2 } from 'lucide-react';
+import { ArrowLeft, Info, Tag, ExternalLink, Share2 } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PlaceholderImage from '../components/ui/PlaceholderImage';
@@ -286,149 +286,58 @@ function ProductDetail() {
                                         )}
                                     </div>
 
-                                    {/* 販売情報部分 - 特典typeを表示するように修正 */}
+                                    {/* 販売情報部分 - DLsiteがるまにのみ表示 */}
                                     <div>
                                         <h2 className="text-xl font-bold mb-6 flex items-center">
                                             <ExternalLink size={20} className="mr-2 text-pink-500" />
                                             販売情報
                                         </h2>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            {/* DLsiteがるまに */}
-                                            <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
-                                                <div className="bg-[#052A83] text-white p-3 flex justify-between items-center">
-                                                    <h3 className="font-bold text-lg">DLsiteがるまに</h3>
-                                                    <ExternalLink size={18} />
-                                                </div>
-
-                                                <div className="p-4">
-                                                    {product.dlafUrl ? (
-                                                        <>
-                                                            <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
-                                                                {product.bonuses && product.bonuses.dlsite && product.bonuses.dlsite.length > 0 ? (
-                                                                    <div>
-                                                                        {product.bonuses.dlsite.map((bonus, index) => (
-                                                                            <div key={index} className="mb-2">
-                                                                                <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
-                                                                                    <Volume2 size={12} className="mr-1" />
-                                                                                    {bonus.type || '特典'}
-                                                                                </div>
-                                                                                <p className="font-medium">{bonus.name}</p>
-                                                                                {bonus.conditions && <p className="text-xs">{bonus.conditions}</p>}
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                ) : (
-                                                                    <p>特典情報は未登録です</p>
-                                                                )}
-                                                            </div>
-                                                            <a
-                                                                href={product.dlafUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="block w-full bg-[#052A83] hover:bg-[#041e61] text-white text-center py-3 rounded-md transition-colors font-medium"
-                                                            >
-                                                                DLsiteがるまにで聴く
-                                                            </a>
-                                                        </>
-                                                    ) : (
-                                                        <div className="text-center py-8 text-gray-500">
-                                                            <p>販売情報は未登録です</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                        <div className="flex flex-wrap gap-4">
+                                            {/* DLsiteがるまにボタン */}
+                                            {product.dlafUrl && (
+                                                <a
+                                                    href={product.dlafUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-center gap-2 bg-[#052A83] hover:bg-[#041e61] text-white text-center py-2.5 px-4 rounded-md transition-colors font-medium text-sm whitespace-nowrap w-52"
+                                                >
+                                                    <ExternalLink size={16} />
+                                                    DLsiteがるまにで聴く
+                                                </a>
+                                            )}
 
                                             {/* ポケットドラマCD */}
-                                            <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
-                                                <div className="bg-[#3561A9] text-white p-3 flex justify-between items-center">
-                                                    <h3 className="font-bold text-lg">ポケットドラマCD</h3>
-                                                    <ExternalLink size={18} />
-                                                </div>
-
-                                                <div className="p-4">
-                                                    {product.pocketdramaUrl ? (
-                                                        <>
-                                                            <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
-                                                                {product.bonuses && product.bonuses.pocketdrama && product.bonuses.pocketdrama.length > 0 ? (
-                                                                    <div>
-                                                                        {product.bonuses.pocketdrama.map((bonus, index) => (
-                                                                            <div key={index} className="mb-2">
-                                                                                <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
-                                                                                    <Volume2 size={12} className="mr-1" />
-                                                                                    {bonus.type || '特典'}
-                                                                                </div>
-                                                                                <p className="font-medium">{bonus.name}</p>
-                                                                                {bonus.conditions && <p className="text-xs">{bonus.conditions}</p>}
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                ) : (
-                                                                    <p>特典情報は未登録です</p>
-                                                                )}
-                                                            </div>
-                                                            <a
-                                                                href={product.pocketdramaUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="block w-full bg-[#3561A9] hover:bg-[#2a4e89] text-white text-center py-3 rounded-md transition-colors font-medium"
-                                                            >
-                                                                ポケドラで聴く
-                                                            </a>
-                                                        </>
-                                                    ) : (
-                                                        <div className="text-center py-8 text-gray-500">
-                                                            <p>販売情報は未登録です</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                            {product.pocketdramaUrl && (
+                                                <a
+                                                    href={product.pocketdramaUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-center gap-2 bg-[#3561A9] hover:bg-[#2a4e89] text-white text-center py-2.5 px-4 rounded-md transition-colors font-medium text-sm whitespace-nowrap w-52"
+                                                >
+                                                    <ExternalLink size={16} />
+                                                    ポケドラで聴く
+                                                </a>
+                                            )}
 
                                             {/* ステラプレイヤー */}
-                                            <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
-                                                <div className="bg-[#FF8D8D] text-white p-3 flex justify-between items-center">
-                                                    <h3 className="font-bold text-lg">ステラプレイヤー</h3>
-                                                    <ExternalLink size={18} />
-                                                </div>
-
-                                                <div className="p-4">
-                                                    {product.stellaplayerUrl ? (
-                                                        <>
-                                                            <div className="text-sm text-gray-600 mb-4 min-h-[60px]">
-                                                                {product.bonuses && product.bonuses.stellaplayer && product.bonuses.stellaplayer.length > 0 ? (
-                                                                    <div>
-                                                                        {product.bonuses.stellaplayer.map((bonus, index) => (
-                                                                            <div key={index} className="mb-2">
-                                                                                <div className="inline-flex items-center bg-yellow-400 text-yellow-800 font-bold px-2 py-0.5 text-xs rounded mb-1 whitespace-nowrap">
-                                                                                    <Volume2 size={12} className="mr-1" />
-                                                                                    {bonus.type || '特典'}
-                                                                                </div>
-                                                                                <p className="font-medium">{bonus.name}</p>
-                                                                                {bonus.conditions && <p className="text-xs">{bonus.conditions}</p>}
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                ) : (
-                                                                    <p>特典情報は未登録です</p>
-                                                                )}
-                                                            </div>
-                                                            <a
-                                                                href={product.stellaplayerUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="block w-full bg-[#FF8D8D] hover:bg-[#e57e7e] text-white text-center py-3 rounded-md transition-colors font-medium"
-                                                            >
-                                                                ステラプレイヤーで聴く
-                                                            </a>
-                                                        </>
-                                                    ) : (
-                                                        <div className="text-center py-8 text-gray-500">
-                                                            <p>販売情報は未登録です</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                            {product.stellaplayerUrl && (
+                                                <a
+                                                    href={product.stellaplayerUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-center gap-2 bg-[#FF8D8D] hover:bg-[#e57e7e] text-white text-center py-2.5 px-4 rounded-md transition-colors font-medium text-sm whitespace-nowrap w-52"
+                                                >
+                                                    <ExternalLink size={16} />
+                                                    ステラプレイヤーで聴く
+                                                </a>
+                                            )}
                                         </div>
+
+                                        {/* 販売情報がない場合のメッセージ */}
+                                        {!product.dlafUrl && !product.pocketdramaUrl && !product.stellaplayerUrl && (
+                                            <p className="text-gray-500">販売情報は準備中です</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
