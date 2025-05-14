@@ -370,6 +370,51 @@ export async function getProductsByYear(year, page = 1, pageSize = 20) {
     }
 }
 
+// 特定の年の月別作品数を取得する関数
+export async function getProductCountsByMonth(year) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return {};
+    }
+
+    try {
+        const startDate = `${year}-01-01`;
+        const endDate = `${year}-12-31`;
+
+        // その年のすべての作品を取得（ページングなし）
+        const productsQuery = query(
+            collection(db, 'products'),
+            where('releaseDate', '>=', startDate),
+            where('releaseDate', '<=', endDate)
+        );
+
+        const querySnapshot = await getDocs(productsQuery);
+
+        // 月別のカウント
+        const monthlyCounts = {};
+
+        // 1〜12月の初期化
+        for (let i = 1; i <= 12; i++) {
+            const month = i.toString().padStart(2, '0');
+            monthlyCounts[month] = 0;
+        }
+
+        // 作品の月をカウント
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.releaseDate) {
+                const month = data.releaseDate.substring(5, 7);
+                monthlyCounts[month] = (monthlyCounts[month] || 0) + 1;
+            }
+        });
+
+        return monthlyCounts;
+    } catch (error) {
+        console.error('Error getting product counts by month:', error);
+        return {};
+    }
+}
+
 // 全作品を取得する関数（管理ツール用など限定的な用途に使用）
 export async function getAllProducts(limitCount = 50, sortOrder = 'latest') {
     if (!db) {

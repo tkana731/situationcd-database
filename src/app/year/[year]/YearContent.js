@@ -7,7 +7,7 @@ import { Box, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import ProductGrid from '../../components/ui/ProductGrid';
 import Pagination from '../../components/ui/Pagination';
-import { getProductsByYear } from '../../../lib/firebase/products';
+import { getProductsByYear, getProductCountsByMonth } from '../../../lib/firebase/products';
 
 export default function YearContent() {
     const params = useParams();
@@ -20,6 +20,7 @@ export default function YearContent() {
     const [loading, setLoading] = useState(true);
     const [groupedByMonth, setGroupedByMonth] = useState({});
     const [groupedByDate, setGroupedByDate] = useState({});
+    const [monthlyCounts, setMonthlyCounts] = useState({}); // 月別作品数
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMonthNavDropdown, setIsMonthNavDropdown] = useState(false);
     const [sortType, setSortType] = useState('month'); // 'month' または 'date'
@@ -34,6 +35,12 @@ export default function YearContent() {
 
             try {
                 setLoading(true);
+
+                // 月別作品数を取得
+                const monthlyCountsData = await getProductCountsByMonth(year);
+                setMonthlyCounts(monthlyCountsData);
+
+                // ページング対応の作品データを取得
                 const { products: productsData, totalCount: count, hasMore: more } =
                     await getProductsByYear(year, page, 20);
 
@@ -171,15 +178,12 @@ export default function YearContent() {
         return () => document.removeEventListener('click', handleClickOutside);
     }, [isDropdownOpen, isMonthNavDropdown]);
 
-    // 月リストを取得
+    // 月リストを取得（作品のある月のみ）
     const getAvailableMonths = () => {
-        const months = Object.keys(sortType === 'month' ? groupedByMonth : groupedByDate)
-            .map(key => {
-                // 日別表示の場合はYYYY-MM-DDから月を抽出
-                const month = sortType === 'month' ? key : key.substring(5, 7);
-                return month;
-            })
-            .filter((value, index, self) => self.indexOf(value) === index) // 重複削除
+        // monthlyCounts から作品がある月のみを取得
+        const months = Object.entries(monthlyCounts)
+            .filter(([_, count]) => count > 0)
+            .map(([month, _]) => month)
             .sort((a, b) => parseInt(a) - parseInt(b));
 
         return months;
@@ -274,15 +278,18 @@ export default function YearContent() {
                 <div className="mb-8 bg-white rounded-lg shadow-sm p-4">
                     <h2 className="text-sm font-medium text-gray-700 mb-3">各月にジャンプ</h2>
 
-                    {/* デスクトップ: ボタン形式 */}
-                    <div className="hidden md:flex flex-wrap gap-2">
+                    {/* デスクトップ: ボタン形式 - タグと同じデザイン */}
+                    <div className="hidden md:flex flex-wrap gap-3">
                         {availableMonths.map(month => (
                             <button
                                 key={month}
                                 onClick={() => scrollToMonth(month)}
-                                className="px-3 py-1.5 text-sm bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-md transition-colors"
+                                className="flex items-center justify-between bg-white border border-pink-200 px-4 py-3 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition-colors"
                             >
-                                {getMonthName(month)}
+                                <span className="text-pink-600">{getMonthName(month)}</span>
+                                <span className="ml-2 bg-pink-100 text-pink-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                    {monthlyCounts[month]}
+                                </span>
                             </button>
                         ))}
                     </div>
@@ -303,9 +310,12 @@ export default function YearContent() {
                                     <button
                                         key={month}
                                         onClick={() => scrollToMonth(month)}
-                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-pink-50 hover:text-pink-600"
+                                        className="block w-full text-left px-4 py-3 text-gray-700 hover:bg-pink-50 flex items-center justify-between"
                                     >
-                                        {getMonthName(month)}
+                                        <span className="text-pink-600">{getMonthName(month)}</span>
+                                        <span className="bg-pink-100 text-pink-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                            {monthlyCounts[month]}
+                                        </span>
                                     </button>
                                 ))}
                             </div>
