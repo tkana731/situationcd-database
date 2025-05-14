@@ -20,7 +20,7 @@ export const metadata = {
     siteName: 'シチュエーションCDデータベース',
     images: [
       {
-        url: 'https://situationcd.com/og-image.jpg', // OGP画像を用意してください
+        url: 'https://situationcd.com/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'シチュエーションCDデータベース',
@@ -33,7 +33,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'シチュエーションCDデータベース',
     description: '女性向けシチュエーションCDの情報サイト',
-    images: ['https://situationcd.com/og-image.jpg'], // OGP画像を用意してください
+    images: ['https://situationcd.com/og-image.jpg'],
   },
   icons: {
     icon: [
@@ -49,6 +49,8 @@ export const metadata = {
     canonical: 'https://situationcd.com/',
   },
   manifest: '/site.webmanifest',
+  // metadataBaseを追加
+  metadataBase: new URL('https://situationcd.com'),
 };
 
 export default function RootLayout({ children }) {

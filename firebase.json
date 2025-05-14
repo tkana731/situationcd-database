@@ -13,8 +13,19 @@
           {
             "key": "Cache-Control",
             "value": "max-age=3600"
+          },
+          {
+            "key": "Strict-Transport-Security",
+            "value": "max-age=31536000; includeSubDomains"
           }
         ]
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/**",
+        "destination": "https://situationcd.com/:splat",
+        "type": 301
       }
     ],
     "rewrites": [
