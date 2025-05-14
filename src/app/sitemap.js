@@ -60,7 +60,7 @@ export default async function sitemap() {
     // 発売年のURLを追加
     for (let year = 2010; year <= currentYear; year++) {
         routes.push({
-            url: `${baseUrl}/year/${year}`,
+            url: `${baseUrl}/year/${year}/`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.7,
@@ -72,7 +72,7 @@ export default async function sitemap() {
         const actors = await getAllActors(20);
         actors.forEach(actor => {
             routes.push({
-                url: `${baseUrl}/actor/${encodeURIComponent(actor.name)}`,
+                url: `${baseUrl}/actor/${encodeURIComponent(actor.name)}/`,
                 lastModified: new Date(),
                 changeFrequency: 'weekly',
                 priority: 0.6,
