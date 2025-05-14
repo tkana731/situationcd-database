@@ -2,16 +2,19 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Box, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import ProductGrid from '../../components/ui/ProductGrid';
+import Pagination from '../../components/ui/Pagination';
 import { getProductsByYear } from '../../../lib/firebase/products';
 
 export default function YearContent() {
     const params = useParams();
     const router = useRouter();
     const year = params?.year;
+    const dropdownRef = useRef(null);
+    const monthNavDropdownRef = useRef(null);
 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -21,6 +24,9 @@ export default function YearContent() {
     const [isMonthNavDropdown, setIsMonthNavDropdown] = useState(false);
     const [sortType, setSortType] = useState('month'); // 'month' または 'date'
     const [showScrollButton, setShowScrollButton] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
 
     useEffect(() => {
         const fetchProductsByYear = async () => {
@@ -28,8 +34,12 @@ export default function YearContent() {
 
             try {
                 setLoading(true);
-                const productsData = await getProductsByYear(year);
+                const { products: productsData, totalCount: count, hasMore: more } =
+                    await getProductsByYear(year, page, 20);
+
                 setProducts(productsData);
+                setTotalCount(count);
+                setHasMore(more);
 
                 // 月別にグループ化
                 const groupedMonth = {};
@@ -58,13 +68,24 @@ export default function YearContent() {
                 setGroupedByDate(groupedDate);
             } catch (error) {
                 console.error('作品データの取得中にエラーが発生しました:', error);
+                setProducts([]);
+                setTotalCount(0);
+                setHasMore(false);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchProductsByYear();
-    }, [year]);
+    }, [year, page]);
+
+    // ページ変更時に先頭にスクロール
+    useEffect(() => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }, [page]);
 
     // スクロール位置の監視
     useEffect(() => {
@@ -96,14 +117,6 @@ export default function YearContent() {
         }
         // スマホの場合はドロップダウンを閉じる
         setIsMonthNavDropdown(false);
-    };
-
-    // 月の最初の日を見つける
-    const getFirstDateOfMonth = (month) => {
-        const datesInMonth = Object.keys(groupedByDate)
-            .filter(date => date.substring(5, 7) === month)
-            .sort();
-        return datesInMonth[0];
     };
 
     // トップに戻るボタンのハンドラ
@@ -139,7 +152,7 @@ export default function YearContent() {
         return years;
     };
 
-    // 月別または日付別の表示を切り替え
+    // ドロップダウン切替
     const toggleDropdown = () => {
         setIsDropdownOpen(!isDropdownOpen);
     };
@@ -147,10 +160,10 @@ export default function YearContent() {
     // 外部クリックでドロップダウンを閉じる
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (isDropdownOpen && !e.target.closest('.dropdown-container')) {
+            if (isDropdownOpen && dropdownRef.current && !dropdownRef.current.contains(e.target)) {
                 setIsDropdownOpen(false);
             }
-            if (isMonthNavDropdown && !e.target.closest('.month-nav-dropdown')) {
+            if (isMonthNavDropdown && monthNavDropdownRef.current && !monthNavDropdownRef.current.contains(e.target)) {
                 setIsMonthNavDropdown(false);
             }
         };
@@ -172,6 +185,14 @@ export default function YearContent() {
         return months;
     };
 
+    // ページ変更ハンドラ
+    const handlePageChange = (newPage) => {
+        setPage(newPage);
+    };
+
+    // 総ページ数の計算
+    const totalPages = Math.ceil(totalCount / 20);
+
     if (!year) {
         return (
             <div className="container mx-auto px-4 py-8">
@@ -191,11 +212,11 @@ export default function YearContent() {
                 </h1>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <p className="text-gray-600">{products.length}件の作品</p>
+                    <p className="text-gray-600">{totalCount}件の作品</p>
 
                     <div className="flex flex-wrap gap-4 items-center">
                         {/* 年選択ドロップダウン */}
-                        <div className="dropdown-container relative">
+                        <div className="dropdown-container relative" ref={dropdownRef}>
                             <button
                                 onClick={toggleDropdown}
                                 className="px-4 py-2 rounded-md flex items-center bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
@@ -228,8 +249,8 @@ export default function YearContent() {
                             <button
                                 onClick={() => setSortType('month')}
                                 className={`px-4 py-2 rounded-md text-sm border ${sortType === 'month'
-                                        ? 'bg-pink-50 text-pink-600 border-pink-200 font-medium'
-                                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                                    ? 'bg-pink-50 text-pink-600 border-pink-200 font-medium'
+                                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                                     }`}
                             >
                                 月別表示
@@ -237,8 +258,8 @@ export default function YearContent() {
                             <button
                                 onClick={() => setSortType('date')}
                                 className={`px-4 py-2 rounded-md text-sm border ${sortType === 'date'
-                                        ? 'bg-pink-50 text-pink-600 border-pink-200 font-medium'
-                                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                                    ? 'bg-pink-50 text-pink-600 border-pink-200 font-medium'
+                                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                                     }`}
                             >
                                 日別表示
@@ -267,7 +288,7 @@ export default function YearContent() {
                     </div>
 
                     {/* モバイル: ドロップダウン形式 */}
-                    <div className="md:hidden month-nav-dropdown relative">
+                    <div className="md:hidden month-nav-dropdown relative" ref={monthNavDropdownRef}>
                         <button
                             onClick={() => setIsMonthNavDropdown(!isMonthNavDropdown)}
                             className="w-full px-4 py-2 rounded-md flex items-center justify-between bg-white text-gray-700 border border-gray-200"
@@ -341,6 +362,16 @@ export default function YearContent() {
                                 );
                             })
                     )}
+
+                    {/* ページネーション */}
+                    <div className="mt-10">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                            colorScheme="pink"
+                        />
+                    </div>
                 </>
             ) : (
                 <div className="text-center py-12 bg-white rounded-lg shadow-sm">

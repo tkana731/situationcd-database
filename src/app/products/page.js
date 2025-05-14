@@ -7,8 +7,8 @@ import { Box, Calendar } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ProductGrid from '../components/ui/ProductGrid';
-import Pagination from '../components/ui/Pagination'; // 部品化したページネーションをインポート
-import { getAllProducts } from '../../lib/firebase/products';
+import Pagination from '../components/ui/Pagination';
+import { getProductsPaginated } from '../../lib/firebase/products';
 
 export default function ProductsPage() {
     const [products, setProducts] = useState([]);
@@ -16,11 +16,13 @@ export default function ProductsPage() {
     const [loading, setLoading] = useState(true);
     const [sortOrder, setSortOrder] = useState('latest'); // 初期値は新着順
     const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [lastVisible, setLastVisible] = useState(null);
 
-    // 初回データ読み込み
+    // データ読み込み
     useEffect(() => {
         fetchProducts();
-    }, [sortOrder]); // sortOrderが変わったら再取得
+    }, [sortOrder, page]); // sortOrderまたはpageが変わったら再取得
 
     // ページ変更時に先頭にスクロール
     useEffect(() => {
@@ -35,11 +37,14 @@ export default function ProductsPage() {
         try {
             setLoading(true);
 
-            // 全件取得（limitなし）
-            const productsData = await getAllProducts(9999, sortOrder);
+            // 新しいページング対応関数を使用
+            const { products: productsData, totalCount: count, hasMore: more, lastVisible: last } =
+                await getProductsPaginated(page, 20, sortOrder);
 
             setProducts(productsData);
-            setTotalCount(productsData.length);
+            setTotalCount(count);
+            setHasMore(more);
+            setLastVisible(last);
         } catch (error) {
             console.error('作品データの取得中にエラーが発生しました:', error);
         } finally {
@@ -51,22 +56,16 @@ export default function ProductsPage() {
     const handleSortChange = (order) => {
         setSortOrder(order);
         setPage(1); // ソート変更時は1ページ目に戻す
+        setLastVisible(null); // カーソルをリセット
     };
-
-    // ページネーション用の作品取得
-    const itemsPerPage = 20;
-    const getVisibleResults = () => {
-        const startIndex = (page - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return products.slice(startIndex, endIndex);
-    };
-
-    const totalPages = Math.ceil(products.length / itemsPerPage);
 
     // ページ変更ハンドラ（Paginationコンポーネント用）
     const handlePageChange = (newPage) => {
         setPage(newPage);
     };
+
+    // 総ページ数の計算
+    const totalPages = Math.ceil(totalCount / 20);
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
@@ -126,9 +125,9 @@ export default function ProductsPage() {
                         </div>
                     ) : products.length > 0 ? (
                         <>
-                            <ProductGrid products={getVisibleResults()} />
+                            <ProductGrid products={products} />
 
-                            {/* 部品化したPaginationコンポーネントを使用 */}
+                            {/* ページネーションコンポーネント */}
                             <div className="mt-10">
                                 <Pagination
                                     currentPage={page}

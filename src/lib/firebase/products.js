@@ -11,6 +11,7 @@ import {
     where,
     orderBy,
     limit,
+    startAfter,
     startAt,
     endAt
 } from 'firebase/firestore';
@@ -41,7 +42,335 @@ try {
     console.error('Firebase initialization error:', error);
 }
 
-// 全作品を取得する関数
+// ページング付きで製品を取得する関数
+export async function getProductsPaginated(page = 1, pageSize = 20, sortOrder = 'latest') {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return { products: [], totalCount: 0, lastVisible: null };
+    }
+
+    try {
+        // ソート順によってクエリを変更
+        let orderByField;
+        let orderDirection;
+
+        switch (sortOrder) {
+            case 'latest':
+                orderByField = 'createdAt';
+                orderDirection = 'desc';
+                break;
+            case 'newest':
+                orderByField = 'releaseDate';
+                orderDirection = 'desc';
+                break;
+            case 'oldest':
+                orderByField = 'releaseDate';
+                orderDirection = 'asc';
+                break;
+            default:
+                orderByField = 'createdAt';
+                orderDirection = 'desc';
+        }
+
+        // トータルカウントを取得する別のクエリ
+        // 注意: これは小規模なコレクションでのみ推奨されます
+        // 大規模なコレクションの場合はカウンターを使用するべきです
+        const countQuery = query(collection(db, 'products'));
+        const countSnapshot = await getDocs(countQuery);
+        const totalCount = countSnapshot.size;
+
+        // メインクエリを構築
+        let productsQuery = query(
+            collection(db, 'products'),
+            orderBy(orderByField, orderDirection),
+            limit(pageSize)
+        );
+
+        // 2ページ目以降の場合、前のページの最後のドキュメントを取得
+        if (page > 1) {
+            // 前のページの最後のドキュメントを取得するクエリ
+            const prevPageQuery = query(
+                collection(db, 'products'),
+                orderBy(orderByField, orderDirection),
+                limit((page - 1) * pageSize)
+            );
+
+            const prevPageSnapshot = await getDocs(prevPageQuery);
+            const prevPageDocs = prevPageSnapshot.docs;
+
+            if (prevPageDocs.length === 0) {
+                return { products: [], totalCount, lastVisible: null };
+            }
+
+            // 最後のドキュメントを取得
+            const lastVisible = prevPageDocs[prevPageDocs.length - 1];
+
+            // カーソルベースのページングでクエリを更新
+            productsQuery = query(
+                collection(db, 'products'),
+                orderBy(orderByField, orderDirection),
+                startAfter(lastVisible),
+                limit(pageSize)
+            );
+        }
+
+        const querySnapshot = await getDocs(productsQuery);
+        const products = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        // 次のページのために最後のドキュメントを保存
+        const lastVisible = querySnapshot.docs.length > 0
+            ? querySnapshot.docs[querySnapshot.docs.length - 1]
+            : null;
+
+        return {
+            products,
+            totalCount,
+            lastVisible,
+            hasMore: products.length === pageSize
+        };
+    } catch (error) {
+        console.error('Error getting paginated products:', error);
+        return { products: [], totalCount: 0, lastVisible: null, hasMore: false };
+    }
+}
+
+// 検索用の関数もページング対応
+export async function searchProductsPaginated(searchParams, page = 1, pageSize = 20) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return { products: [], totalCount: 0, hasMore: false };
+    }
+
+    try {
+        let productsQuery;
+        let countQuery;
+
+        // タグで検索
+        if (searchParams.tag) {
+            countQuery = query(
+                collection(db, 'products'),
+                where('tags', 'array-contains', searchParams.tag)
+            );
+
+            productsQuery = query(
+                collection(db, 'products'),
+                where('tags', 'array-contains', searchParams.tag),
+                orderBy('releaseDate', 'desc'),
+                limit(pageSize)
+            );
+
+            if (page > 1) {
+                // 前のページの最後のドキュメントを取得するクエリ
+                const prevPageQuery = query(
+                    collection(db, 'products'),
+                    where('tags', 'array-contains', searchParams.tag),
+                    orderBy('releaseDate', 'desc'),
+                    limit((page - 1) * pageSize)
+                );
+
+                const prevPageSnapshot = await getDocs(prevPageQuery);
+                const prevPageDocs = prevPageSnapshot.docs;
+
+                if (prevPageDocs.length > 0) {
+                    const lastVisible = prevPageDocs[prevPageDocs.length - 1];
+
+                    productsQuery = query(
+                        collection(db, 'products'),
+                        where('tags', 'array-contains', searchParams.tag),
+                        orderBy('releaseDate', 'desc'),
+                        startAfter(lastVisible),
+                        limit(pageSize)
+                    );
+                }
+            }
+        }
+        // 声優で検索
+        else if (searchParams.actor) {
+            countQuery = query(
+                collection(db, 'products'),
+                where('cast', 'array-contains', searchParams.actor)
+            );
+
+            productsQuery = query(
+                collection(db, 'products'),
+                where('cast', 'array-contains', searchParams.actor),
+                orderBy('releaseDate', 'desc'),
+                limit(pageSize)
+            );
+
+            if (page > 1) {
+                // 前のページの最後のドキュメントを取得するクエリ
+                const prevPageQuery = query(
+                    collection(db, 'products'),
+                    where('cast', 'array-contains', searchParams.actor),
+                    orderBy('releaseDate', 'desc'),
+                    limit((page - 1) * pageSize)
+                );
+
+                const prevPageSnapshot = await getDocs(prevPageQuery);
+                const prevPageDocs = prevPageSnapshot.docs;
+
+                if (prevPageDocs.length > 0) {
+                    const lastVisible = prevPageDocs[prevPageDocs.length - 1];
+
+                    productsQuery = query(
+                        collection(db, 'products'),
+                        where('cast', 'array-contains', searchParams.actor),
+                        orderBy('releaseDate', 'desc'),
+                        startAfter(lastVisible),
+                        limit(pageSize)
+                    );
+                }
+            }
+        }
+        // キーワード検索
+        // 注意: Firestoreは全文検索に最適ではないため、大規模なアプリケーションではAlgoliaなどの
+        // 専用の検索サービスを検討してください
+        else if (searchParams.q) {
+            const keyword = searchParams.q.toLowerCase();
+
+            // 注意: ここでは簡易的な対応として全件取得してフィルタリングしていますが、
+            // 実際のプロダクションでは全文検索サービスの利用を強く推奨します
+            const allProductsQuery = query(
+                collection(db, 'products'),
+                orderBy('createdAt', 'desc'),
+                limit(1000) // 最大1000件に制限
+            );
+
+            const querySnapshot = await getDocs(allProductsQuery);
+            const allProducts = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            const filteredResults = allProducts.filter(product =>
+                (product.title && product.title.toLowerCase().includes(keyword)) ||
+                (product.maker && product.maker.toLowerCase().includes(keyword)) ||
+                (Array.isArray(product.cast) && product.cast.some(actor =>
+                    actor.toLowerCase().includes(keyword))
+                )
+            );
+
+            // クライアントサイドでページングを実装
+            const totalCount = filteredResults.length;
+            const startIndex = (page - 1) * pageSize;
+            const products = filteredResults.slice(startIndex, startIndex + pageSize);
+
+            return {
+                products,
+                totalCount,
+                hasMore: startIndex + pageSize < totalCount
+            };
+        }
+        // デフォルトは新着順
+        else {
+            return await getProductsPaginated(page, pageSize, 'latest');
+        }
+
+        // トータルカウントを取得（タグ検索や声優検索の場合）
+        const countSnapshot = await getDocs(countQuery);
+        const totalCount = countSnapshot.size;
+
+        // 実際の商品データを取得
+        const querySnapshot = await getDocs(productsQuery);
+        const products = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        return {
+            products,
+            totalCount,
+            hasMore: products.length === pageSize
+        };
+    } catch (error) {
+        console.error('Error searching products with pagination:', error);
+        return { products: [], totalCount: 0, hasMore: false };
+    }
+}
+
+// 特定の年の作品を取得する関数（ページネーション対応）
+export async function getProductsByYear(year, page = 1, pageSize = 20) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return { products: [], totalCount: 0, hasMore: false };
+    }
+
+    try {
+        const startDate = `${year}-01-01`;
+        const endDate = `${year}-12-31`;
+
+        // カウントクエリ
+        const countQuery = query(
+            collection(db, 'products'),
+            where('releaseDate', '>=', startDate),
+            where('releaseDate', '<=', endDate)
+        );
+
+        const countSnapshot = await getDocs(countQuery);
+        const totalCount = countSnapshot.size;
+
+        // データクエリ
+        let productsQuery = query(
+            collection(db, 'products'),
+            where('releaseDate', '>=', startDate),
+            where('releaseDate', '<=', endDate),
+            orderBy('releaseDate', 'asc'),
+            limit(pageSize)
+        );
+
+        if (page > 1) {
+            // 前のページの最後のドキュメントを取得するクエリ
+            const prevPageQuery = query(
+                collection(db, 'products'),
+                where('releaseDate', '>=', startDate),
+                where('releaseDate', '<=', endDate),
+                orderBy('releaseDate', 'asc'),
+                limit((page - 1) * pageSize)
+            );
+
+            const prevPageSnapshot = await getDocs(prevPageQuery);
+            const prevPageDocs = prevPageSnapshot.docs;
+
+            if (prevPageDocs.length === 0) {
+                return { products: [], totalCount, hasMore: false };
+            }
+
+            // 最後のドキュメントを取得
+            const lastVisible = prevPageDocs[prevPageDocs.length - 1];
+
+            // カーソルベースのページングでクエリを更新
+            productsQuery = query(
+                collection(db, 'products'),
+                where('releaseDate', '>=', startDate),
+                where('releaseDate', '<=', endDate),
+                orderBy('releaseDate', 'asc'),
+                startAfter(lastVisible),
+                limit(pageSize)
+            );
+        }
+
+        const querySnapshot = await getDocs(productsQuery);
+        const products = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        return {
+            products,
+            totalCount,
+            hasMore: products.length === pageSize
+        };
+    } catch (error) {
+        console.error('Error getting products by year:', error);
+        return { products: [], totalCount: 0, hasMore: false };
+    }
+}
+
+// 全作品を取得する関数（管理ツール用など限定的な用途に使用）
 export async function getAllProducts(limitCount = 50, sortOrder = 'latest') {
     if (!db) {
         console.error('Firestore not initialized');
@@ -97,36 +426,7 @@ export async function getAllProducts(limitCount = 50, sortOrder = 'latest') {
     }
 }
 
-// 特定の年の作品を取得する関数
-export async function getProductsByYear(year) {
-    if (!db) {
-        console.error('Firestore not initialized');
-        return [];
-    }
-
-    try {
-        const startDate = `${year}-01-01`;
-        const endDate = `${year}-12-31`;
-
-        const productsQuery = query(
-            collection(db, 'products'),
-            where('releaseDate', '>=', startDate),
-            where('releaseDate', '<=', endDate),
-            orderBy('releaseDate', 'asc')
-        );
-
-        const querySnapshot = await getDocs(productsQuery);
-        return querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-    } catch (error) {
-        console.error('Error getting products by year:', error);
-        return [];
-    }
-}
-
-// 作品を検索する関数
+// 作品を検索する関数（下位互換性のため残す、ページネーションなし）
 export async function searchProducts(searchParams) {
     if (!db) {
         console.error('Firestore not initialized');
@@ -136,65 +436,8 @@ export async function searchProducts(searchParams) {
     console.log('searchProducts called with params:', searchParams);
 
     try {
-        let productsQuery;
-
-        // タグで検索
-        if (searchParams.tag) {
-            productsQuery = query(
-                collection(db, 'products'),
-                where('tags', 'array-contains', searchParams.tag),
-                orderBy('releaseDate', 'desc')
-            );
-        }
-        // 声優で検索
-        else if (searchParams.actor) {
-            productsQuery = query(
-                collection(db, 'products'),
-                where('cast', 'array-contains', searchParams.actor),
-                orderBy('releaseDate', 'desc')
-            );
-        }
-        // キーワードで検索（タイトル、メーカー、キャスト）
-        else if (searchParams.q) {
-            // Firestoreは完全一致しかサポートしていないため、
-            // キーワード検索は簡易的な実装になっています
-
-            // 全件を取得（limitなし）
-            const allProductsQuery = query(
-                collection(db, 'products'),
-                orderBy('createdAt', 'desc')
-            );
-            const querySnapshot = await getDocs(allProductsQuery);
-            const allProducts = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            const filteredResults = allProducts.filter(product =>
-                product.title.toLowerCase().includes(searchParams.q.toLowerCase()) ||
-                (product.maker && product.maker.toLowerCase().includes(searchParams.q.toLowerCase())) ||
-                // 声優（cast配列）の検索を追加
-                (Array.isArray(product.cast) && product.cast.some(actor =>
-                    actor.toLowerCase().includes(searchParams.q.toLowerCase())
-                ))
-            );
-
-            return filteredResults;
-        }
-        // デフォルトは新着順
-        else {
-            return await getAllProducts();
-        }
-
-        const querySnapshot = await getDocs(productsQuery);
-        const allResults = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-
-        console.log('Query results length:', allResults.length);
-
-        return allResults;
+        const { products } = await searchProductsPaginated(searchParams, 1, 1000);
+        return products;
     } catch (error) {
         console.error('Error searching products:', error);
         return [];

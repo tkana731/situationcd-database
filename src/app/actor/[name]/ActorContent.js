@@ -3,21 +3,22 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { Box, User, Tag } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { User } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import ProductGrid from '../../components/ui/ProductGrid';
 import SchemaOrg from '../../components/SchemaOrg';
 import Pagination from '../../components/ui/Pagination';
-import { searchProducts } from '../../../lib/firebase/products';
+import { searchProductsPaginated } from '../../../lib/firebase/products';
 
 function ActorDetailContent() {
     const params = useParams();
-    const router = useRouter();
     const actorName = decodeURIComponent(params?.name || '');
 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
 
     useEffect(() => {
         const fetchActorProducts = async () => {
@@ -25,17 +26,24 @@ function ActorDetailContent() {
 
             try {
                 setLoading(true);
-                const productsData = await searchProducts({ actor: actorName });
+                const { products: productsData, totalCount: count, hasMore: more } =
+                    await searchProductsPaginated({ actor: actorName }, page, 20);
+
                 setProducts(productsData);
+                setTotalCount(count);
+                setHasMore(more);
             } catch (error) {
                 console.error('作品データの取得中にエラーが発生しました:', error);
+                setProducts([]);
+                setTotalCount(0);
+                setHasMore(false);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchActorProducts();
-    }, [actorName]);
+    }, [actorName, page]);
 
     // ページ変更時に先頭にスクロール
     useEffect(() => {
@@ -45,17 +53,10 @@ function ActorDetailContent() {
         });
     }, [page]);
 
-    // ページネーション用の作品取得
-    const itemsPerPage = 20;
-    const getVisibleResults = () => {
-        const startIndex = (page - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return products.slice(startIndex, endIndex);
-    };
+    // 総ページ数の計算
+    const totalPages = Math.ceil(totalCount / 20);
 
-    const totalPages = Math.ceil(products.length / itemsPerPage);
-
-    // ページ変更ハンドラ（Paginationコンポーネント用）
+    // ページ変更ハンドラ
     const handlePageChange = (newPage) => {
         setPage(newPage);
     };
@@ -75,7 +76,7 @@ function ActorDetailContent() {
                         <User size={20} className="mr-2 text-pink-500" />
                         {actorName} さんの出演作品
                     </h1>
-                    <p className="text-gray-600">{products.length}件の作品</p>
+                    <p className="text-gray-600">{totalCount}件の作品</p>
                 </div>
 
                 {loading ? (
@@ -85,9 +86,9 @@ function ActorDetailContent() {
                     </div>
                 ) : products.length > 0 ? (
                     <>
-                        <ProductGrid products={getVisibleResults()} />
+                        <ProductGrid products={products} />
 
-                        {/* 部品化したPaginationコンポーネントを使用 */}
+                        {/* ページネーションコンポーネント */}
                         <div className="mt-10">
                             <Pagination
                                 currentPage={page}

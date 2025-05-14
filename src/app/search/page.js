@@ -8,8 +8,8 @@ import { ArrowLeft } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ProductGrid from '../components/ui/ProductGrid';
-import Pagination from '../components/ui/Pagination'; // 部品化したページネーションをインポート
-import { searchProducts } from '../../lib/firebase/products';
+import Pagination from '../components/ui/Pagination';
+import { searchProductsPaginated } from '../../lib/firebase/products';
 
 // 実際のコンテンツコンポーネント
 function SearchResults() {
@@ -23,6 +23,8 @@ function SearchResults() {
         query: ''
     });
     const [page, setPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
 
     useEffect(() => {
         const fetchSearchResults = async () => {
@@ -33,34 +35,36 @@ function SearchResults() {
                 const tag = searchParams.get('tag');
                 const actor = searchParams.get('actor');
 
-                let searchResults = [];
                 let searchType = '';
                 let searchQuery = '';
+                let searchParamsObj = {};
 
-                // searchProducts関数にパラメータを適切に渡す
-                const params = {};
+                // パラメータを適切に設定
                 if (query) {
-                    params.q = query;
+                    searchParamsObj.q = query;
                     searchType = 'query';
                     searchQuery = query;
                 } else if (tag) {
-                    params.tag = tag;
+                    searchParamsObj.tag = tag;
                     searchType = 'tag';
                     searchQuery = tag;
                 } else if (actor) {
-                    params.actor = actor;
+                    searchParamsObj.actor = actor;
                     searchType = 'actor';
                     searchQuery = actor;
                 }
 
-                console.log('Searching with params:', params);
+                console.log('Searching with params:', searchParamsObj);
 
-                // 新しいsearchProducts関数は配列を返す
-                searchResults = await searchProducts(params);
+                // 新しいページング対応検索関数を使用
+                const { products, totalCount, hasMore } =
+                    await searchProductsPaginated(searchParamsObj, page, 20);
 
-                console.log('Search results length:', searchResults.length);
+                console.log('Search results:', products.length, 'Total:', totalCount);
 
-                setResults(searchResults);
+                setResults(products);
+                setTotalCount(totalCount);
+                setHasMore(hasMore);
                 setSearchInfo({
                     type: searchType,
                     query: searchQuery
@@ -68,13 +72,15 @@ function SearchResults() {
             } catch (error) {
                 console.error('検索結果の取得中にエラーが発生しました:', error);
                 setResults([]);
+                setTotalCount(0);
+                setHasMore(false);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchSearchResults();
-    }, [searchParams]);
+    }, [searchParams, page]);
 
     // ページ変更時に先頭にスクロール
     useEffect(() => {
@@ -102,15 +108,8 @@ function SearchResults() {
         }
     };
 
-    // ページネーション用の作品取得
-    const itemsPerPage = 20;
-    const getVisibleResults = () => {
-        const startIndex = (page - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return results.slice(startIndex, endIndex);
-    };
-
-    const totalPages = Math.ceil(results.length / itemsPerPage);
+    // 総ページ数の計算
+    const totalPages = Math.ceil(totalCount / 20);
 
     // ページ変更ハンドラ（Paginationコンポーネント用）
     const handlePageChange = (newPage) => {
@@ -136,7 +135,7 @@ function SearchResults() {
                             {getSearchTitle()}
                         </h1>
                         <p className="text-gray-600">
-                            {results.length}件の作品が見つかりました
+                            {totalCount}件の作品が見つかりました
                         </p>
                     </div>
 
@@ -147,9 +146,9 @@ function SearchResults() {
                         </div>
                     ) : results.length > 0 ? (
                         <>
-                            <ProductGrid products={getVisibleResults()} />
+                            <ProductGrid products={results} />
 
-                            {/* 部品化したPaginationコンポーネントを使用 */}
+                            {/* ページネーションコンポーネント */}
                             <div className="mt-10">
                                 <Pagination
                                     currentPage={page}
