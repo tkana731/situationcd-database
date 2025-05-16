@@ -1,6 +1,7 @@
 // /src/app/components/layout/Footer.js
 
 import Link from 'next/link';
+import { Twitter } from 'lucide-react';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -28,6 +29,22 @@ const Footer = () => {
                                 <li><Link href="/products" className="hover:text-pink-600">新着作品</Link></li>
                                 <li><Link href="/tags" className="hover:text-pink-600">人気タグ</Link></li>
                                 <li><Link href="/actors" className="hover:text-pink-600">声優一覧</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-pink-600 mb-2">SNS</h3>
+                            <ul className="text-gray-600 text-sm space-y-1">
+                                <li>
+                                    <a
+                                        href="https://x.com/situationcd"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center hover:text-pink-600"
+                                    >
+                                        <Twitter size={16} className="mr-1" />
+                                        公式X（Twitter）
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     </div>
