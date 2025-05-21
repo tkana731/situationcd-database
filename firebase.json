@@ -19,8 +19,24 @@
     ],
     "rewrites": [
       {
+        "source": "/index.html",
+        "destination": "/"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/index.html",
+        "destination": "/",
+        "type": 301
+      },
+      {
+        "source": "**([^/])$",
+        "destination": "**$1/",
+        "type": 301
       }
     ],
     "trailingSlash": true

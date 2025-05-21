@@ -4,8 +4,8 @@ import HomePage from './HomePage';
 import { metadata as rootMetadata } from './layout';
 
 export function generateMetadata() {
-  // 完全なURL（絶対パス）を使用
-  const url = 'https://situationcd.com';
+  // 完全なURL（絶対パス）を使用し、末尾スラッシュを確保
+  const url = 'https://situationcd.com/';
   const ogImageUrl = 'https://situationcd.com/og-image.jpg';
 
   return {

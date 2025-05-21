@@ -1,7 +1,14 @@
-# シチュエーションCDデータベース robots.txt
 User-agent: *
 Allow: /
-Disallow: /admin/
 
-# サイトマップの場所
+# クローラーには常に末尾スラッシュ付きのURLを表示
+Disallow: /*([^/])$
+
+# 動的検索ページのパラメータの制限
+Allow: /search/?tag=
+Allow: /search/?actor=
+Allow: /search/?q=
+Disallow: /search/?*&*
+
+# サイトマップ
 Sitemap: https://situationcd.com/sitemap.xml

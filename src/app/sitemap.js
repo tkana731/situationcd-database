@@ -1,6 +1,6 @@
 // src/app/sitemap.js
 
-import { getAllActors } from '../lib/firebase/products';
+import { getAllActors, getAllTags } from '../lib/firebase/products';
 
 export const dynamic = 'force-static';
 export const revalidate = false;
@@ -11,46 +11,46 @@ export default async function sitemap() {
     // 現在の年を取得
     const currentYear = new Date().getFullYear();
 
-    // 基本的なURLの定義
+    // 基本的なURLの定義（末尾スラッシュを確保）
     const routes = [
         {
-            url: baseUrl,
+            url: `${baseUrl}/`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 1.0,
         },
         {
-            url: `${baseUrl}/products`,
+            url: `${baseUrl}/products/`,
             lastModified: new Date(),
             changeFrequency: 'daily',
             priority: 0.9,
         },
         {
-            url: `${baseUrl}/tags`,
+            url: `${baseUrl}/tags/`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.8,
         },
         {
-            url: `${baseUrl}/actors`,
+            url: `${baseUrl}/actors/`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.8,
         },
         {
-            url: `${baseUrl}/about`,
+            url: `${baseUrl}/about/`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.7,
         },
         {
-            url: `${baseUrl}/privacy`,
+            url: `${baseUrl}/privacy/`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.5,
         },
         {
-            url: `${baseUrl}/contact`,
+            url: `${baseUrl}/contact/`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.6,
@@ -67,19 +67,53 @@ export default async function sitemap() {
         });
     }
 
-    // 人気声優のURLを追加（上位20名程度）
+    // 特定のサンプル声優URLを追加（問題が報告されたURL）
+    const sampleActors = [
+        'aki',
+        '佐和真中',
+        '土門熱'
+    ];
+
+    sampleActors.forEach(actor => {
+        routes.push({
+            url: `${baseUrl}/actor/${encodeURIComponent(actor)}/`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.7,
+        });
+    });
+
+    // 声優のURLを追加
     try {
-        const actors = await getAllActors(20);
+        const actors = await getAllActors(); // 全声優を取得
         actors.forEach(actor => {
-            routes.push({
-                url: `${baseUrl}/actor/${encodeURIComponent(actor.name)}/`,
-                lastModified: new Date(),
-                changeFrequency: 'weekly',
-                priority: 0.6,
-            });
+            // サンプル声優と重複しない場合のみ追加
+            if (!sampleActors.includes(actor.name)) {
+                routes.push({
+                    url: `${baseUrl}/actor/${encodeURIComponent(actor.name)}/`,
+                    lastModified: new Date(),
+                    changeFrequency: 'weekly',
+                    priority: 0.6,
+                });
+            }
         });
     } catch (error) {
         console.error('Error generating actor URLs:', error);
+    }
+
+    // タグのURLも追加
+    try {
+        const tags = await getAllTags();
+        tags.forEach(tag => {
+            routes.push({
+                url: `${baseUrl}/search/?tag=${encodeURIComponent(tag.name)}`,
+                lastModified: new Date(),
+                changeFrequency: 'weekly',
+                priority: 0.5,
+            });
+        });
+    } catch (error) {
+        console.error('Error generating tag URLs:', error);
     }
 
     return routes;

@@ -4,7 +4,8 @@ import { GoogleAnalytics } from '@next/third-parties/google'
 import { Inter } from 'next/font/google';
 import './globals.css';
 
-const gaId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
+// 直接GA4の測定IDを使用
+const gaId = process.env.NEXT_PUBLIC_GA_ID || process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
 
 // Interフォントのセットアップ
 const inter = Inter({ subsets: ['latin'] });
@@ -65,8 +66,9 @@ export default function RootLayout({ children }) {
       </head>
       <body className={inter.className}>
         {children}
+        {/* Google Analytics - コンポーネントの位置を変更 */}
+        {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
-      {gaId && <GoogleAnalytics gaId={gaId} />}
     </html>
   );
 }
