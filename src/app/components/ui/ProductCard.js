@@ -2,12 +2,15 @@
 
 'use client';
 
-import { Calendar, User } from 'lucide-react';
+import { Calendar, User, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import PlaceholderImage from './PlaceholderImage';
+import { useWishlistContext } from '@/contexts/WishlistContext';
 
 const ProductCard = ({ product }) => {
     const router = useRouter();
+    const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistContext();
+    const isWishlisted = isInWishlist(product.id);
 
     // 作品クリック時の処理
     const handleProductClick = () => {
@@ -25,6 +28,16 @@ const ProductCard = ({ product }) => {
         e.stopPropagation(); // 親要素へのクリック伝播を停止
         // 検索ページではなく、声優専用ページにリダイレクト
         router.push(`/actor/${encodeURIComponent(actor)}`);
+    };
+
+    // ウィッシュリストボタンクリック時の処理
+    const handleWishlistClick = (e) => {
+        e.stopPropagation(); // 親要素へのクリック伝播を停止
+        if (isWishlisted) {
+            removeFromWishlist(product.id);
+        } else {
+            addToWishlist(product);
+        }
     };
 
     // releaseDateの表示用フォーマット
@@ -80,6 +93,18 @@ const ProductCard = ({ product }) => {
                         <PlaceholderImage width="100%" height="100%" />
                     </div>
                 )}
+                <button
+                    onClick={handleWishlistClick}
+                    className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow duration-200"
+                    aria-label={isWishlisted ? 'お気に入りから削除' : 'お気に入りに追加'}
+                >
+                    <Heart
+                        size={20}
+                        className={`transition-colors duration-200 ${
+                            isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500'
+                        }`}
+                    />
+                </button>
             </div>
             <div className="p-4 flex-grow">
                 <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.title}</h3>

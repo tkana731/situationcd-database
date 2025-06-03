@@ -3,6 +3,7 @@
 import { GoogleAnalytics } from '@next/third-parties/google'
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { WishlistProvider } from '@/contexts/WishlistContext';
 
 // 直接GA4の測定IDを使用
 const gaId = process.env.NEXT_PUBLIC_GA_ID || process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
@@ -65,7 +66,9 @@ export default function RootLayout({ children }) {
         <meta name="twitter:image" content="https://situationcd.com/og-image.jpg" />
       </head>
       <body className={inter.className}>
-        {children}
+        <WishlistProvider>
+          {children}
+        </WishlistProvider>
         {/* Google Analytics - コンポーネントの位置を変更 */}
         {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>

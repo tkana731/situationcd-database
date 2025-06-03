@@ -3,12 +3,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, List, Info, ChevronDown, Calendar } from 'lucide-react';
+import { Home, List, Info, ChevronDown, Calendar, Heart } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { useWishlistContext } from '@/contexts/WishlistContext';
 
 const Header = () => {
     const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const { wishlist } = useWishlistContext();
 
     // 外部クリックでドロップダウンを閉じる
     useEffect(() => {
@@ -79,6 +81,16 @@ const Header = () => {
                         )}
                     </div>
 
+                    <Link href="/wishlist" className="relative flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2">
+                        <Heart size={18} />
+                        <span className="hidden md:inline">お気に入り</span>
+                        {wishlist.length > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                {wishlist.length}
+                            </span>
+                        )}
+                    </Link>
+                    
                     <Link href="/about" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2">
                         <Info size={18} />
                         <span className="hidden md:inline">サイトについて</span>

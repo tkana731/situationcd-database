@@ -20,9 +20,14 @@ const SearchBox = () => {
     return (
         <div className="bg-gradient-to-r from-pink-100 to-pink-50 py-12 px-4 rounded-lg mb-10">
             <div className="max-w-2xl mx-auto">
-                <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-                    あなたの好みのシチュエーションCDを見つけよう
-                </h2>
+                <div className="text-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                        あなたにぴったりの一本が見つかる
+                    </h2>
+                    <p className="text-gray-600 text-sm">
+                        作品カード右上のハートをクリックして「お気に入り」に登録すると、このページの下部に「あなたへのおすすめ」が表示されます
+                    </p>
+                </div>
                 <form onSubmit={handleSubmit} className="relative">
                     <input
                         type="text"

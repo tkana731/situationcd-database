@@ -10,6 +10,7 @@ import SearchBox from './components/ui/SearchBox';
 import ProductGrid from './components/ui/ProductGrid';
 import TagList from './components/ui/TagList';
 import VoiceActorList from './components/ui/VoiceActorList';
+import RecommendedProducts from './components/ui/RecommendedProducts';
 import { getUpcomingProducts } from '../lib/firebase/products';
 import { getAllTags } from '../lib/firebase/products';
 import { getAllActors } from '../lib/firebase/products';
@@ -71,6 +72,8 @@ export default function HomePage() {
                         )}
                     </div>
 
+                    <RecommendedProducts excludeProductIds={upcomingProducts.map(p => p.id)} />
+                    
                     <TagList tags={popularTags} />
                     <VoiceActorList actors={popularActors} />
                 </div>

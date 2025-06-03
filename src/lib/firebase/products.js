@@ -671,3 +671,55 @@ export async function getUpcomingProducts(limitCount = 8) {
         }
     }
 }
+
+// タグで作品を取得する関数
+export async function getProductsByTags(tags, limitCount = 20) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return [];
+    }
+
+    try {
+        const productsQuery = query(
+            collection(db, 'products'),
+            where('tags', 'array-contains-any', tags),
+            orderBy('releaseDate', 'desc'),
+            limit(limitCount)
+        );
+
+        const querySnapshot = await getDocs(productsQuery);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error getting products by tags:', error);
+        return [];
+    }
+}
+
+// 声優で作品を取得する関数
+export async function getProductsByCast(cast, limitCount = 20) {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return [];
+    }
+
+    try {
+        const productsQuery = query(
+            collection(db, 'products'),
+            where('cast', 'array-contains-any', cast),
+            orderBy('releaseDate', 'desc'),
+            limit(limitCount)
+        );
+
+        const querySnapshot = await getDocs(productsQuery);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error getting products by cast:', error);
+        return [];
+    }
+}
