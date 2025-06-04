@@ -17,16 +17,7 @@
         ]
       }
     ],
-    "rewrites": [
-      {
-        "source": "/index.html",
-        "destination": "/"
-      },
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
+    "rewrites": [],
     "redirects": [
       {
         "source": "/index.html",
