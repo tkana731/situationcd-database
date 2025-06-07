@@ -45,13 +45,19 @@ const Header = () => {
                     <span className="inline sm:hidden">シチュCD DB</span>
                 </Link>
                 <div className="flex gap-2 md:gap-4 items-center">
-                    <Link href="/" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2">
+                    <Link href="/" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2" title="ホーム - シチュエーションCDデータベース">
                         <Home size={18} />
                         <span className="hidden md:inline">ホーム</span>
                     </Link>
-                    <Link href="/products" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2">
+                    <Link href="/products" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2" title="シチュエーションCD作品一覧">
                         <List size={18} />
                         <span className="hidden md:inline">作品一覧</span>
+                    </Link>
+                    <Link href="/actors" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2" title="声優一覧">
+                        <span className="hidden md:inline">声優</span>
+                    </Link>
+                    <Link href="/tags" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2" title="ジャンルタグ一覧">
+                        <span className="hidden md:inline">ジャンル</span>
                     </Link>
 
                     {/* 発売年ドロップダウン */}

@@ -101,15 +101,16 @@ export default async function sitemap() {
         console.error('Error generating actor URLs:', error);
     }
 
-    // タグのURLも追加
+    // 人気タグのURLを追加（静的ページとして）
     try {
         const tags = await getAllTags();
-        tags.forEach(tag => {
+        const popularTags = tags.slice(0, 30); // 上位30タグのみ
+        popularTags.forEach(tag => {
             routes.push({
-                url: `${baseUrl}/search/?tag=${encodeURIComponent(tag.name)}`,
+                url: `${baseUrl}/tag/${encodeURIComponent(tag.name)}/`,
                 lastModified: new Date(),
                 changeFrequency: 'weekly',
-                priority: 0.5,
+                priority: 0.7,
             });
         });
     } catch (error) {

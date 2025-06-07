@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Box, Calendar } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
@@ -19,21 +19,8 @@ export default function ProductsPage() {
     const [hasMore, setHasMore] = useState(false);
     const [lastVisible, setLastVisible] = useState(null);
 
-    // データ読み込み
-    useEffect(() => {
-        fetchProducts();
-    }, [sortOrder, page]); // sortOrderまたはpageが変わったら再取得
-
-    // ページ変更時に先頭にスクロール
-    useEffect(() => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }, [page]);
-
     // 製品データの取得
-    const fetchProducts = async () => {
+    const fetchProducts = useCallback(async () => {
         try {
             setLoading(true);
 
@@ -50,7 +37,20 @@ export default function ProductsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, sortOrder]);
+
+    // データ読み込み
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
+
+    // ページ変更時に先頭にスクロール
+    useEffect(() => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }, [page]);
 
     // ソート順変更ハンドラ
     const handleSortChange = (order) => {

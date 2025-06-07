@@ -11,6 +11,7 @@ import ProductGrid from './components/ui/ProductGrid';
 import TagList from './components/ui/TagList';
 import VoiceActorList from './components/ui/VoiceActorList';
 import RecommendedProducts from './components/ui/RecommendedProducts';
+import SchemaOrg from './components/SchemaOrg';
 import { getUpcomingProducts } from '../lib/firebase/products';
 import { getAllTags } from '../lib/firebase/products';
 import { getAllActors } from '../lib/firebase/products';
@@ -46,6 +47,7 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
+            <SchemaOrg type="website" />
             <Header />
 
             <main className="flex-grow">

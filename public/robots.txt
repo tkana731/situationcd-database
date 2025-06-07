@@ -1,14 +1,26 @@
 User-agent: *
 Allow: /
 
-# クローラーには常に末尾スラッシュ付きのURLを表示
-Disallow: /*([^/])$
+# Googlebot用最適化
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
 
-# 動的検索ページのパラメータの制限
-Allow: /search/?tag=
-Allow: /search/?actor=
-Allow: /search/?q=
-Disallow: /search/?*&*
+# Bingbot用最適化
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# 管理画面をクロール禁止
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /api/
+
+# 重複コンテンツ防止
+Disallow: /*?*
+Allow: /search?tag=*
+Allow: /search?actor=*
+Allow: /search?q=*
 
 # サイトマップ
 Sitemap: https://situationcd.com/sitemap.xml
