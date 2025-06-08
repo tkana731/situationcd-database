@@ -1,9 +1,10 @@
 // src/app/actor/[name]/page.js
 
+import { notFound } from 'next/navigation';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import ActorContent from './ActorContent';
-import { getAllActors } from '../../../lib/firebase/products';
+import { getAllActors, searchProductsPaginated } from '../../../lib/firebase/products';
 
 // 静的パスを生成する関数
 export async function generateStaticParams() {
@@ -48,12 +49,35 @@ export async function generateMetadata({ params }) {
     };
 }
 
-export default function ActorPage() {
+export default async function ActorPage({ params }) {
+    const resolvedParams = await params;
+    const actorName = decodeURIComponent(resolvedParams.name);
+
+    // サーバーサイドでデータを取得
+    const { products, totalCount, hasMore } = await searchProductsPaginated({ actor: actorName }, 1, 20);
+
+    // 作品が存在しない場合は404を返す
+    if (totalCount === 0) {
+        notFound();
+    }
+
+    // Firestoreタイムスタンプをシリアライズ
+    const serializedProducts = products.map(product => ({
+        ...product,
+        createdAt: product.createdAt?.toDate?.() ? product.createdAt.toDate().toISOString() : product.createdAt,
+        updatedAt: product.updatedAt?.toDate?.() ? product.updatedAt.toDate().toISOString() : product.updatedAt
+    }));
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <main className="flex-grow">
-                <ActorContent />
+                <ActorContent 
+                    actorName={actorName}
+                    initialProducts={serializedProducts}
+                    initialTotalCount={totalCount}
+                    initialHasMore={hasMore}
+                />
             </main>
             <Footer />
         </div>

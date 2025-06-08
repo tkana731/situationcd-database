@@ -1,8 +1,10 @@
 // src/app/year/[year]/page.js
 
+import { notFound } from 'next/navigation';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import YearContent from './YearContent';
+import { getProductsByYear, getProductCountsByMonth } from '../../../lib/firebase/products';
 
 export async function generateStaticParams() {
     const currentYear = new Date().getFullYear();
@@ -41,12 +43,35 @@ export async function generateMetadata({ params }) {
     };
 }
 
-export default function YearPage() {
+export default async function YearPage({ params }) {
+    const resolvedParams = await params;
+    const year = resolvedParams.year;
+
+    // サーバーサイドでデータを取得
+    const { products, totalCount } = await getProductsByYear(year, 1, 1000);
+    const monthlyCounts = await getProductCountsByMonth(year);
+
+    // 作品が存在しない場合は404を返す
+    if (totalCount === 0) {
+        notFound();
+    }
+
+    // Firestoreタイムスタンプをシリアライズ
+    const serializedProducts = products.map(product => ({
+        ...product,
+        createdAt: product.createdAt?.toDate?.() ? product.createdAt.toDate().toISOString() : product.createdAt,
+        updatedAt: product.updatedAt?.toDate?.() ? product.updatedAt.toDate().toISOString() : product.updatedAt
+    }));
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <main className="flex-grow">
-                <YearContent />
+                <YearContent 
+                    year={year}
+                    initialProducts={serializedProducts}
+                    initialMonthlyCounts={monthlyCounts}
+                />
             </main>
             <Footer />
         </div>

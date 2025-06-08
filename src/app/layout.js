@@ -88,7 +88,6 @@ export default function RootLayout({ children }) {
         {/* SEO向けの追加メタタグ */}
         <meta name="google" content="notranslate" />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-        <link rel="canonical" href="https://situationcd.com/" />
         
         {/* X（Twitter）のクロールを促進するための追加メタタグ */}
         <meta name="twitter:card" content="summary_large_image" />

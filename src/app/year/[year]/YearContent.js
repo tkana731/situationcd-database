@@ -4,79 +4,53 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Box, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import ProductGrid from '../../components/ui/ProductGrid';
 import Breadcrumb from '../../components/ui/Breadcrumb';
-import { getProductsByYear, getProductCountsByMonth } from '../../../lib/firebase/products';
 
-export default function YearContent() {
-    const params = useParams();
+export default function YearContent({ year, initialProducts, initialMonthlyCounts }) {
     const router = useRouter();
-    const year = params?.year;
     const dropdownRef = useRef(null);
     const monthNavDropdownRef = useRef(null);
 
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [products, setProducts] = useState(initialProducts || []);
+    const [loading, setLoading] = useState(false);
     const [groupedByMonth, setGroupedByMonth] = useState({});
     const [groupedByDate, setGroupedByDate] = useState({});
-    const [monthlyCounts, setMonthlyCounts] = useState({}); // 月別作品数
+    const [monthlyCounts, setMonthlyCounts] = useState(initialMonthlyCounts || {}); // 月別作品数
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMonthNavDropdown, setIsMonthNavDropdown] = useState(false);
     const [sortType, setSortType] = useState('month'); // 'month' または 'date'
     const [showScrollButton, setShowScrollButton] = useState(false);
 
     useEffect(() => {
-        const fetchProductsByYear = async () => {
-            if (!year) return;
+        if (!year || !initialProducts) return;
 
-            try {
-                setLoading(true);
+        // 初期データを使用してグループ化
+        const groupedMonth = {};
+        const groupedDate = {};
 
-                // 月別作品数を取得
-                const monthlyCountsData = await getProductCountsByMonth(year);
-                setMonthlyCounts(monthlyCountsData);
+        initialProducts.forEach(product => {
+            if (product.releaseDate) {
+                // 月別グループ化
+                const month = product.releaseDate.substring(5, 7);
+                if (!groupedMonth[month]) {
+                    groupedMonth[month] = [];
+                }
+                groupedMonth[month].push(product);
 
-                // ページング対応の作品データを取得（ページネーションなしですべての作品を取得）
-                const { products: productsData } = await getProductsByYear(year, 1, 1000);
-
-                setProducts(productsData);
-
-                // 月別にグループ化
-                const groupedMonth = {};
-                // 日付別にグループ化
-                const groupedDate = {};
-
-                productsData.forEach(product => {
-                    if (product.releaseDate) {
-                        // 月別グループ化
-                        const month = product.releaseDate.substring(5, 7);
-                        if (!groupedMonth[month]) {
-                            groupedMonth[month] = [];
-                        }
-                        groupedMonth[month].push(product);
-
-                        // 日付別グループ化（YYYY-MM-DD をキーに使用）
-                        const date = product.releaseDate;
-                        if (!groupedDate[date]) {
-                            groupedDate[date] = [];
-                        }
-                        groupedDate[date].push(product);
-                    }
-                });
-
-                setGroupedByMonth(groupedMonth);
-                setGroupedByDate(groupedDate);
-            } catch (error) {
-                console.error('作品データの取得中にエラーが発生しました:', error);
-                setProducts([]);
-            } finally {
-                setLoading(false);
+                // 日付別グループ化（YYYY-MM-DD をキーに使用）
+                const date = product.releaseDate;
+                if (!groupedDate[date]) {
+                    groupedDate[date] = [];
+                }
+                groupedDate[date].push(product);
             }
-        };
+        });
 
-        fetchProductsByYear();
-    }, [year]);
+        setGroupedByMonth(groupedMonth);
+        setGroupedByDate(groupedDate);
+    }, [year, initialProducts]);
 
     // スクロール位置の監視
     useEffect(() => {
@@ -173,13 +147,6 @@ export default function YearContent() {
         return months;
     };
 
-    if (!year) {
-        return (
-            <div className="container mx-auto px-4 py-8">
-                <p className="text-center text-gray-600">読み込み中...</p>
-            </div>
-        );
-    }
 
     const availableMonths = getAvailableMonths();
 

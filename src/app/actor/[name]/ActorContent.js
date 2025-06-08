@@ -4,26 +4,27 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { User } from 'lucide-react';
-import { useParams } from 'next/navigation';
 import ProductGrid from '../../components/ui/ProductGrid';
 import SchemaOrg from '../../components/SchemaOrg';
 import Pagination from '../../components/ui/Pagination';
 import Breadcrumb from '../../components/ui/Breadcrumb';
 import { searchProductsPaginated } from '../../../lib/firebase/products';
 
-function ActorDetailContent() {
-    const params = useParams();
-    const actorName = decodeURIComponent(params?.name || '');
-
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+function ActorDetailContent({ actorName, initialProducts, initialTotalCount, initialHasMore }) {
+    const [products, setProducts] = useState(initialProducts || []);
+    const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
-    const [hasMore, setHasMore] = useState(false);
+    const [totalCount, setTotalCount] = useState(initialTotalCount || 0);
+    const [hasMore, setHasMore] = useState(initialHasMore || false);
 
     useEffect(() => {
         const fetchActorProducts = async () => {
             if (!actorName) return;
+            
+            // 1ページ目は初期データを使用
+            if (page === 1 && initialProducts) {
+                return;
+            }
 
             try {
                 setLoading(true);
@@ -44,7 +45,7 @@ function ActorDetailContent() {
         };
 
         fetchActorProducts();
-    }, [actorName, page]);
+    }, [actorName, page, initialProducts]);
 
     // ページ変更時に先頭にスクロール
     useEffect(() => {
@@ -116,7 +117,7 @@ function ActorDetailContent() {
     );
 }
 
-export default function ActorContent() {
+export default function ActorContent({ actorName, initialProducts, initialTotalCount, initialHasMore }) {
     return (
         <Suspense fallback={
             <div className="container mx-auto px-4 py-8">
@@ -126,7 +127,12 @@ export default function ActorContent() {
                 </div>
             </div>
         }>
-            <ActorDetailContent />
+            <ActorDetailContent 
+                actorName={actorName}
+                initialProducts={initialProducts}
+                initialTotalCount={initialTotalCount}
+                initialHasMore={initialHasMore}
+            />
         </Suspense>
     );
 }

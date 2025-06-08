@@ -10,6 +10,20 @@
         },
         {
           "fieldPath": "releaseDate",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "products",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "cast",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "releaseDate",
           "order": "DESCENDING"
         }
       ]
