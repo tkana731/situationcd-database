@@ -9,6 +9,7 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ProductGrid from '../components/ui/ProductGrid';
 import Pagination from '../components/ui/Pagination';
+import Breadcrumb from '../components/ui/Breadcrumb';
 import { searchProductsPaginated } from '../../lib/firebase/products';
 
 // 実際のコンテンツコンポーネント
@@ -122,6 +123,11 @@ function SearchResults() {
 
             <main className="flex-grow">
                 <div className="container mx-auto px-4 py-8">
+                    {/* パンくずリスト */}
+                    <Breadcrumb items={[
+                        { name: '検索結果' }
+                    ]} />
+
                     <button
                         onClick={handleBack}
                         className="mb-6 flex items-center gap-2 px-4 py-2 bg-white text-pink-600 rounded-full shadow-md border border-pink-100 hover:bg-pink-50 hover:border-pink-200 hover:shadow-lg transition-all duration-300 group"

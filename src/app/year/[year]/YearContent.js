@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Box, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import ProductGrid from '../../components/ui/ProductGrid';
+import Breadcrumb from '../../components/ui/Breadcrumb';
 import { getProductsByYear, getProductCountsByMonth } from '../../../lib/firebase/products';
 
 export default function YearContent() {
@@ -184,6 +185,12 @@ export default function YearContent() {
 
     return (
         <div className="container mx-auto px-4 py-8">
+            {/* パンくずリスト */}
+            <Breadcrumb items={[
+                { name: '年代別', href: '/years' },
+                { name: `${year}年` }
+            ]} />
+
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                     <Calendar size={20} className="mr-2 text-pink-500" />

@@ -7,6 +7,7 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PlaceholderImage from '../components/ui/PlaceholderImage';
 import SchemaOrg from '../components/SchemaOrg';
+import Breadcrumb from '../components/ui/Breadcrumb';
 import { getProductById } from '../../lib/firebase/products';
 
 // 日付フォーマット関数
@@ -160,11 +161,24 @@ function ProductDetail() {
         <div className="min-h-screen flex flex-col bg-gray-50">
             {/* SchemaOrgコンポーネントを追加 */}
             <SchemaOrg product={product} />
+            <SchemaOrg 
+                type="breadcrumb" 
+                breadcrumbs={[
+                    { name: '作品一覧', href: '/products' },
+                    { name: product.title }
+                ]} 
+            />
 
             <Header />
 
             <main className="flex-grow">
                 <div className="container mx-auto px-4 py-8">
+                    {/* パンくずリスト */}
+                    <Breadcrumb items={[
+                        { name: '作品一覧', href: '/products' },
+                        { name: product.title }
+                    ]} />
+
                     {/* 戻るボタンとシェアボタン */}
                     <div className="flex justify-between items-center mb-6">
                         <button

@@ -7,6 +7,7 @@ import { User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import Breadcrumb from '../components/ui/Breadcrumb';
 import { getAllActors } from '../../lib/firebase/products';
 
 export default function ActorsPage() {
@@ -42,6 +43,11 @@ export default function ActorsPage() {
 
             <main className="flex-grow">
                 <div className="container mx-auto px-4 py-8">
+                    {/* パンくずリスト */}
+                    <Breadcrumb items={[
+                        { name: '声優一覧' }
+                    ]} />
+
                     <div className="mb-8">
                         <h1 className="text-2xl font-bold text-gray-800 mb-2 flex items-center">
                             <User size={20} className="mr-2 text-pink-500" />

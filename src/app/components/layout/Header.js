@@ -73,6 +73,13 @@ const Header = () => {
 
                         {isYearDropdownOpen && (
                             <div className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-20 max-h-96 overflow-y-auto py-1">
+                                <Link
+                                    href="/years"
+                                    className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-pink-600 whitespace-nowrap font-medium border-b border-gray-100"
+                                    onClick={() => setIsYearDropdownOpen(false)}
+                                >
+                                    すべての年代を表示
+                                </Link>
                                 {generateYearList().map(year => (
                                     <Link
                                         key={year}

@@ -8,6 +8,7 @@ import { useParams } from 'next/navigation';
 import ProductGrid from '../../components/ui/ProductGrid';
 import SchemaOrg from '../../components/SchemaOrg';
 import Pagination from '../../components/ui/Pagination';
+import Breadcrumb from '../../components/ui/Breadcrumb';
 import { searchProductsPaginated } from '../../../lib/firebase/products';
 
 function ActorDetailContent() {
@@ -71,6 +72,12 @@ function ActorDetailContent() {
             }} />
 
             <div className="container mx-auto px-4 py-8">
+                {/* パンくずリスト */}
+                <Breadcrumb items={[
+                    { name: '声優一覧', href: '/actors' },
+                    { name: actorName }
+                ]} />
+
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                         <User size={20} className="mr-2 text-pink-500" />

@@ -8,6 +8,7 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ProductGrid from '../components/ui/ProductGrid';
 import Pagination from '../components/ui/Pagination';
+import Breadcrumb from '../components/ui/Breadcrumb';
 import { getProductsPaginated } from '../../lib/firebase/products';
 
 export default function ProductsPage() {
@@ -73,6 +74,11 @@ export default function ProductsPage() {
 
             <main className="flex-grow">
                 <div className="container mx-auto px-4 py-8">
+                    {/* パンくずリスト */}
+                    <Breadcrumb items={[
+                        { name: '作品一覧' }
+                    ]} />
+
                     <div className="mb-8">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
                             <Box size={20} className="mr-2 text-pink-500" />

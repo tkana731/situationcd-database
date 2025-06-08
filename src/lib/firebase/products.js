@@ -723,3 +723,31 @@ export async function getProductsByCast(cast, limitCount = 20) {
         return [];
     }
 }
+
+// 年別の作品数を取得する関数
+export async function getProductCountsByYear() {
+    if (!db) {
+        console.error('Firestore not initialized');
+        return {};
+    }
+
+    try {
+        const q = query(collection(db, 'products'));
+        const querySnapshot = await getDocs(q);
+        const yearCounts = {};
+
+        // 作品の年をカウント
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.releaseDate) {
+                const year = data.releaseDate.substring(0, 4);
+                yearCounts[year] = (yearCounts[year] || 0) + 1;
+            }
+        });
+
+        return yearCounts;
+    } catch (error) {
+        console.error('Error getting product counts by year:', error);
+        return {};
+    }
+}

@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 
-export default function SchemaOrg({ product, type = 'product' }) {
+export default function SchemaOrg({ product, type = 'product', breadcrumbs }) {
     useEffect(() => {
         let schema;
 
@@ -71,30 +71,29 @@ export default function SchemaOrg({ product, type = 'product' }) {
                     itemCondition: 'https://schema.org/NewCondition'
                 }
             };
-        } else if (type === 'breadcrumb' && product) {
+        } else if (type === 'breadcrumb' && breadcrumbs) {
+            const itemListElement = [
+                {
+                    '@type': 'ListItem',
+                    position: 1,
+                    name: 'ホーム',
+                    item: 'https://situationcd.com'
+                }
+            ];
+
+            breadcrumbs.forEach((breadcrumb, index) => {
+                itemListElement.push({
+                    '@type': 'ListItem',
+                    position: index + 2,
+                    name: breadcrumb.name,
+                    ...(breadcrumb.href && { item: `https://situationcd.com${breadcrumb.href}` })
+                });
+            });
+
             schema = {
                 '@context': 'https://schema.org',
                 '@type': 'BreadcrumbList',
-                itemListElement: [
-                    {
-                        '@type': 'ListItem',
-                        position: 1,
-                        name: 'ホーム',
-                        item: 'https://situationcd.com'
-                    },
-                    {
-                        '@type': 'ListItem',
-                        position: 2,
-                        name: '作品一覧',
-                        item: 'https://situationcd.com/products'
-                    },
-                    {
-                        '@type': 'ListItem',
-                        position: 3,
-                        name: product.title,
-                        item: `https://situationcd.com/product/${product.id}`
-                    }
-                ]
+                itemListElement
             };
         }
 
@@ -112,7 +111,7 @@ export default function SchemaOrg({ product, type = 'product' }) {
                 }
             };
         }
-    }, [product, type]);
+    }, [product, type, breadcrumbs]);
 
     return null;
 }
