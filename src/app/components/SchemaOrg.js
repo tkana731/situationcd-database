@@ -64,11 +64,6 @@ export default function SchemaOrg({ product, type = 'product', breadcrumbs }) {
                     reviewCount: '1',
                     bestRating: '5',
                     worstRating: '1'
-                },
-                offers: {
-                    '@type': 'Offer',
-                    availability: 'https://schema.org/InStock',
-                    itemCondition: 'https://schema.org/NewCondition'
                 }
             };
         } else if (type === 'breadcrumb' && breadcrumbs) {
