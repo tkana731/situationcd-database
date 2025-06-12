@@ -11,7 +11,7 @@ This is a Next.js application that serves as a database for situation CDs (voice
 - TailwindCSS
 - React
 
-The site allows users to browse and search for voice drama products, view product details, and filter by tags, voice actors, or release year. An admin section provides functionality for managing products and bonuses.
+The site allows users to browse and search for voice drama products, view product details, and filter by tags, voice actors, or release year.
 
 ## Commands
 
@@ -49,10 +49,11 @@ firebase deploy
 
 - `/src/app` - Next.js App Router structure with page components
 - `/src/app/components` - Reusable components
-  - `/admin` - Admin-specific components (forms, selectors)
   - `/layout` - Global layout components (Header, Footer)
   - `/ui` - Shared UI components (ProductCard, SearchBox, etc.)
 - `/src/lib/firebase` - Firebase configuration and data access functions
+- `/src/contexts` - React context providers (WishlistContext)
+- `/src/hooks` - Custom React hooks (useWishlist)
 - `/public` - Static assets
 
 ### Firebase Integration
@@ -62,9 +63,6 @@ firebase deploy
 - `bonuses.js` - Functions for bonus data access
 - Data models use Firestore collections for: products, bonuses, actors, and tags
 
-### Authentication
-
-Admin routes (`/admin/*`) are protected with Firebase Authentication.
 
 ### Core Features
 
@@ -72,26 +70,26 @@ Admin routes (`/admin/*`) are protected with Firebase Authentication.
    - List products with filtering by year, tag, or voice actor
    - Search functionality across product titles, makers, and cast
    - Detailed product view showing related bonuses
+   - Wishlist functionality to save favorite products
 
-2. **Admin Dashboard**
-   - Product management (add/edit/delete)
-   - Bonus management (add/edit/delete)
-   - CSV import tool for bulk product additions
-   - Migration utilities for URL handling
+2. **Navigation Pages**
+   - Year-based browsing (/years, /year/[year])
+   - Tag-based browsing (/tags, /tag/[tag])
+   - Voice actor browsing (/actors, /actor/[name])
+   - Product search page (/search)
 
 ## Important Patterns
 
 ### Data Fetching
 
-- Server-side rendering for public pages
-- Client-side fetching for admin pages
+- Server-side rendering for all pages (Static Site Generation)
 - Firestore queries in `/src/lib/firebase/*.js` files
+- generateStaticParams for dynamic routes
 
-### Forms
+### State Management
 
-- Form components in `/src/app/components/admin/`
-- Form state management with React useState/useEffect
-- Firebase operations for saving data
+- Wishlist state managed via React Context API
+- Local storage persistence for wishlist items
 
 ### SEO and Metadata
 
@@ -102,5 +100,6 @@ Admin routes (`/admin/*`) are protected with Firebase Authentication.
 
 - Environment variables for Firebase should be set in `.env.local` file
 - Firebase rules are defined in `firestore.rules`
-- The app uses both static and dynamic routes (see Next.js app router pattern)
-- Admin functionality requires proper Firebase Authentication credentials
+- The app uses Static Site Generation (SSG) for all pages
+- Admin functionality has been moved to a separate project
+- The site is optimized for SEO with proper metadata and structured data

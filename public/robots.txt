@@ -16,11 +16,14 @@ Disallow: /admin/
 Disallow: /_next/
 Disallow: /api/
 
-# 重複コンテンツ防止
-Disallow: /*?*
-Allow: /search?tag=*
-Allow: /search?actor=*
-Allow: /search?q=*
+# 検索ページをクロール禁止
+Disallow: /search
+
+# 重要なコンテンツページは許可
+Allow: /actor/
+Allow: /tag/
+Allow: /year/
+Allow: /product/
 
 # サイトマップ
 Sitemap: https://situationcd.com/sitemap.xml

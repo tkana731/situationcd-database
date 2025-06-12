@@ -16,6 +16,18 @@ import { searchProductsPaginated } from '../../lib/firebase/products';
 function SearchResults() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    
+    // noindexメタタグを追加
+    useEffect(() => {
+        const metaRobots = document.createElement('meta');
+        metaRobots.name = 'robots';
+        metaRobots.content = 'noindex, nofollow';
+        document.head.appendChild(metaRobots);
+        
+        return () => {
+            document.head.removeChild(metaRobots);
+        };
+    }, []);
 
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
