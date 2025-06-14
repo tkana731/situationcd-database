@@ -1,6 +1,7 @@
 // src/app/sitemap.js
 
 import { getAllActors, getAllTags } from '../lib/firebase/products';
+import { getAllBlogPosts } from '../lib/firebase/blogs';
 
 export const dynamic = 'force-static';
 export const revalidate = false;
@@ -54,6 +55,12 @@ export default async function sitemap() {
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.6,
+        },
+        {
+            url: `${baseUrl}/blog/`,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
+            priority: 0.8,
         },
     ];
 
@@ -115,6 +122,21 @@ export default async function sitemap() {
         });
     } catch (error) {
         console.error('Error generating tag URLs:', error);
+    }
+
+    // ブログ記事のURLを追加
+    try {
+        const blogPosts = await getAllBlogPosts();
+        blogPosts.forEach(post => {
+            routes.push({
+                url: `${baseUrl}/blog/${post.slug}/`,
+                lastModified: new Date(post.updatedAt || post.publishedAt),
+                changeFrequency: 'monthly',
+                priority: 0.6,
+            });
+        });
+    } catch (error) {
+        console.error('Error generating blog URLs:', error);
     }
 
     return routes;

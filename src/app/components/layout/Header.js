@@ -3,7 +3,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, List, Info, ChevronDown, Calendar, Heart, Users, Tag, Menu, X } from 'lucide-react';
+import { Home, List, ChevronDown, Calendar, Heart, Users, Tag, Menu, X, BookOpen } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useWishlistContext } from '@/contexts/WishlistContext';
 
@@ -82,6 +82,10 @@ const Header = () => {
                         <Tag size={18} />
                         <span className="hidden md:inline">ジャンル</span>
                     </Link>
+                    <Link href="/blog" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2" title="ブログ">
+                        <BookOpen size={18} />
+                        <span className="hidden md:inline">ブログ</span>
+                    </Link>
 
                     {/* 発売年ドロップダウン */}
                     <div className="relative" ref={dropdownRef}>
@@ -126,11 +130,6 @@ const Header = () => {
                             </span>
                         )}
                     </Link>
-                    
-                    <Link href="/about" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2">
-                        <Info size={18} />
-                        <span className="hidden md:inline">サイトについて</span>
-                    </Link>
                 </div>
             </div>
 
@@ -164,6 +163,10 @@ const Header = () => {
                                     <Tag size={20} />
                                     <span>ジャンル</span>
                                 </Link>
+                                <Link href="/blog" className="flex items-center gap-3 text-gray-600 hover:text-pink-600 transition-colors p-3 hover:bg-pink-50 rounded" onClick={() => setIsMobileMenuOpen(false)}>
+                                    <BookOpen size={20} />
+                                    <span>ブログ</span>
+                                </Link>
                                 
                                 {/* 発売年ドロップダウン */}
                                 <div className="pt-2">
@@ -193,11 +196,6 @@ const Header = () => {
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <Link href="/about" className="flex items-center gap-3 text-gray-600 hover:text-pink-600 transition-colors p-3 hover:bg-pink-50 rounded" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Info size={20} />
-                                    <span>サイトについて</span>
-                                </Link>
                             </nav>
                         </div>
                     </div>

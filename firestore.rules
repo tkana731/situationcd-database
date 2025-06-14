@@ -26,5 +26,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true; // 書き込みは管理者のみ（Firebase Authと組み合わせて実装）
     }
+    
+    // ブログ記事データは誰でも読み取り可能
+    match /blog_posts/{postId} {
+      allow read: if true;
+      allow write: if true; // 書き込みは管理者のみ（Firebase Authと組み合わせて実装）
+    }
   }
 }

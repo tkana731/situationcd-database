@@ -3,23 +3,26 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Box } from 'lucide-react';
+import Link from 'next/link';
+import { Box, FileText } from 'lucide-react';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import SearchBox from './components/ui/SearchBox';
 import ProductGrid from './components/ui/ProductGrid';
 import TagList from './components/ui/TagList';
 import VoiceActorList from './components/ui/VoiceActorList';
-import RecommendedProducts from './components/ui/RecommendedProducts';
+import UpdateHistory from './components/ui/UpdateHistory';
 import SchemaOrg from './components/SchemaOrg';
 import { getUpcomingProducts } from '../lib/firebase/products';
 import { getAllTags } from '../lib/firebase/products';
 import { getAllActors } from '../lib/firebase/products';
+import { getLatestBlogPosts } from '../lib/firebase/blogs';
 
 export default function HomePage() {
     const [upcomingProducts, setUpcomingProducts] = useState([]);
     const [popularTags, setPopularTags] = useState([]);
     const [popularActors, setPopularActors] = useState([]);
+    const [latestBlogPosts, setLatestBlogPosts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -31,10 +34,12 @@ export default function HomePage() {
                 const upcomingData = await getUpcomingProducts(8);
                 const tagsData = await getAllTags(10);
                 const actorsData = await getAllActors(10);
+                const blogData = await getLatestBlogPosts(3);
 
                 setUpcomingProducts(upcomingData);
                 setPopularTags(tagsData);
                 setPopularActors(actorsData);
+                setLatestBlogPosts(blogData);
             } catch (error) {
                 console.error('データの取得中にエラーが発生しました:', error);
             } finally {
@@ -74,10 +79,73 @@ export default function HomePage() {
                         )}
                     </div>
 
-                    <RecommendedProducts excludeProductIds={upcomingProducts.map(p => p.id)} />
-                    
+                    {/* ブログ新着記事セクション */}
+                    <div className="mb-12">
+                        <h2 className="text-xl font-bold mb-6 flex items-center">
+                            <FileText size={20} className="mr-2 text-pink-500" />
+                            ブログ新着記事
+                        </h2>
+                        
+                        {loading ? (
+                            <div className="text-center py-8">
+                                <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-pink-400 border-r-transparent"></div>
+                            </div>
+                        ) : latestBlogPosts.length > 0 ? (
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                {latestBlogPosts.map((post, index) => (
+                                    <div key={post.id} className={`p-4 ${index !== latestBlogPosts.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+                                            <div className="flex-1">
+                                                <Link 
+                                                    href={`/blog/${post.slug}`}
+                                                    className="block hover:text-pink-600 transition-colors duration-200"
+                                                >
+                                                    <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">
+                                                        {post.title}
+                                                    </h3>
+                                                    {post.excerpt && (
+                                                        <p className="text-sm text-gray-600 line-clamp-2">
+                                                            {post.excerpt}
+                                                        </p>
+                                                    )}
+                                                </Link>
+                                            </div>
+                                            <div className="flex items-center mt-2 sm:mt-0 sm:ml-4">
+                                                {post.category && (
+                                                    <span className="inline-block bg-pink-100 text-pink-700 text-xs px-2 py-1 rounded-full mr-2">
+                                                        {post.category}
+                                                    </span>
+                                                )}
+                                                <time className="text-xs text-gray-500">
+                                                    {new Date(post.publishedAt).toLocaleDateString('ja-JP')}
+                                                </time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="p-4 bg-gray-50 text-center">
+                                    <Link 
+                                        href="/blog"
+                                        className="text-pink-600 text-sm font-medium hover:text-pink-700 transition-colors duration-200"
+                                    >
+                                        ブログ記事をもっと見る →
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 bg-white rounded-lg shadow-sm border border-gray-200">
+                                <p className="text-gray-600">新着記事はまだありません</p>
+                            </div>
+                        )}
+                    </div>
+
                     <TagList tags={popularTags} />
                     <VoiceActorList actors={popularActors} />
+                    
+                    {/* サイト更新履歴セクション */}
+                    <div className="mb-12">
+                        <UpdateHistory />
+                    </div>
                 </div>
             </main>
 

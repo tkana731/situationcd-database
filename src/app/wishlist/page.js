@@ -7,6 +7,7 @@ import { Heart, Trash2 } from 'lucide-react';
 import Header from '@/app/components/layout/Header';
 import Footer from '@/app/components/layout/Footer';
 import ProductGrid from '@/app/components/ui/ProductGrid';
+import RecommendedProducts from '@/app/components/ui/RecommendedProducts';
 import { useWishlistContext } from '@/contexts/WishlistContext';
 
 export default function WishlistPage() {
@@ -77,6 +78,11 @@ export default function WishlistPage() {
                         </a>
                     </div>
                 )}
+                
+                {/* あなたへのおすすめセクション */}
+                <div className="mt-12">
+                    <RecommendedProducts excludeProductIds={wishlist.map(p => p.id)} />
+                </div>
             </main>
             <Footer />
         </div>

@@ -18,7 +18,7 @@ const Footer = () => {
                         <div>
                             <h3 className="font-semibold text-pink-600 mb-2">サイト情報</h3>
                             <ul className="text-gray-600 text-sm space-y-1">
-                                <li><Link href="/about" className="hover:text-pink-600">運営者情報</Link></li>
+                                <li><Link href="/about" className="hover:text-pink-600">サイトについて</Link></li>
                                 <li><Link href="/privacy" className="hover:text-pink-600">プライバシーポリシー</Link></li>
                                 <li><Link href="/contact" className="hover:text-pink-600">お問い合わせ</Link></li>
                             </ul>

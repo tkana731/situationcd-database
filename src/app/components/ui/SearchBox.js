@@ -25,7 +25,7 @@ const SearchBox = () => {
                         あなたにぴったりの一本が見つかる
                     </h2>
                     <p className="text-gray-600 text-sm">
-                        作品カード右上のハートをクリックして「お気に入り」に登録すると、このページの下部に「あなたへのおすすめ」が表示されます
+                        作品カード右上のハートをクリックして「お気に入り」に登録すると、お気に入りページの下部に「あなたへのおすすめ」が表示されます
                     </p>
                 </div>
                 <form onSubmit={handleSubmit} className="relative">
