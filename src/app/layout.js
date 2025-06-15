@@ -18,7 +18,7 @@ export const metadata = {
   },
   description: '女性向けシチュエーションCDの総合情報サイト。最新作品、人気声優、ジャンルタグから好みの作品を簡単検索。DLsiteがるまに、ポケットドラマCD、ステラプレイヤーの作品情報を網羅。ASMR、乙女ゲーム、BL、TLなど多彩なジャンルを収録。',
   keywords: ['シチュエーションCD', 'シチュCD', '女性向け', '声優', 'ドラマCD', 'DLsite', 'DLsiteがるまに', 'ポケットドラマCD', 'ポケドラ', 'ステラプレイヤー', 'ASMR', '乙女ゲーム', 'BL', 'TL', '音声作品'],
-  authors: [{ name: 'シチュエーションCDデータベース運営チーム' }],
+  authors: [{ name: 'シチュエーションCDデータベース管理者' }],
   creator: 'シチュエーションCDデータベース',
   publisher: 'シチュエーションCDデータベース',
   formatDetection: {

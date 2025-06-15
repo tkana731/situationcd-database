@@ -31,13 +31,48 @@ export async function generateMetadata({ params }) {
     // 末尾にスラッシュを追加
     const canonicalUrl = `https://situationcd.com/actor/${encodeURIComponent(actorName)}/`;
 
+    // 声優の出演作品を取得してメタディスクリプションを生成
+    const { products } = await searchProductsPaginated({ actor: actorName }, 1, 10);
+    
+    let description = `${actorName}の出演作品は、`;
+    
+    // 作品名を最大3つまで含める
+    if (products.length > 0) {
+        const productNames = products.slice(0, 3).map(p => p.title);
+        description += productNames.join('、');
+        if (products.length > 3) {
+            description += 'など';
+        }
+        description += 'を掲載しています。';
+        
+        // タグ（ジャンル）を収集
+        const allTags = new Set();
+        products.forEach(product => {
+            if (product.tags && Array.isArray(product.tags)) {
+                product.tags.forEach(tag => allTags.add(tag));
+            }
+        });
+        
+        // タグを最大3つまで含める
+        if (allTags.size > 0) {
+            const tagArray = Array.from(allTags).slice(0, 3);
+            description += tagArray.join('、');
+            if (allTags.size > 3) {
+                description += 'など';
+            }
+            description += 'のジャンルが楽しめます。';
+        }
+    } else {
+        description += 'シチュエーションCDの一覧です。';
+    }
+
     return {
         title: `${actorName}の出演作品一覧 | シチュエーションCDデータベース`,
-        description: `${actorName}が出演するシチュエーションCDの一覧です。`,
+        description: description,
         keywords: `${actorName},出演作品,シチュエーションCD,声優,ドラマCD`,
         openGraph: {
             title: `${actorName}の出演作品一覧`,
-            description: `${actorName}が出演するシチュエーションCDの一覧`,
+            description: description,
             url: canonicalUrl,
             siteName: 'シチュエーションCDデータベース',
             locale: 'ja_JP',
