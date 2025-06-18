@@ -17,7 +17,7 @@ const UpdateHistory = () => {
             type: 'feature'
         },
         {
-            date: '2025-6-15',
+            date: '2025-06-15',
             version: 'v1.2.0',
             title: '「あなたへのおすすめ」セクション移動',
             description: '「あなたへのおすすめ」セクションをトップページ最下部からお気に入りページ下部に移動しました。',
