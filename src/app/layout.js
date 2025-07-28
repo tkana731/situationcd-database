@@ -16,7 +16,7 @@ export const metadata = {
     default: 'シチュエーションCDデータベース | 女性向けシチュエーションCD・音声作品の情報サイト',
     template: '%s | シチュエーションCDデータベース'
   },
-  description: '女性向けシチュエーションCDの総合情報サイト。最新作品、人気声優、ジャンルタグから好みの作品を簡単検索。DLsiteがるまに、ポケットドラマCD、ステラプレイヤーの作品情報を網羅。ASMR、乙女ゲーム、BL、TLなど多彩なジャンルを収録。',
+  description: '女性向けシチュエーションCDの総合情報サイト。最新作品、人氰声優、タグから好みの作品を簡単検索。DLsiteがるまに、ポケットドラマCD、ステラプレイヤーの作品情報を網羅。ASMR、乙女ゲーム、BL、TLなど多彩なタグを収録。',
   keywords: ['シチュエーションCD', 'シチュCD', '女性向け', '声優', 'ドラマCD', 'DLsite', 'DLsiteがるまに', 'ポケットドラマCD', 'ポケドラ', 'ステラプレイヤー', 'ASMR', '乙女ゲーム', 'BL', 'TL', '音声作品'],
   authors: [{ name: 'シチュエーションCDデータベース管理者' }],
   creator: 'シチュエーションCDデータベース',
@@ -32,7 +32,7 @@ export const metadata = {
   },
   openGraph: {
     title: 'シチュエーションCDデータベース',
-    description: '女性向けシチュエーションCDの総合情報サイト。最新作品、人気声優、ジャンルから検索できます。',
+    description: '女性向けシチュエーションCDの総合情報サイト。最新作品、人気声優、タグから検索できます。',
     url: '/',
     siteName: 'シチュエーションCDデータベース',
     images: [
@@ -51,7 +51,7 @@ export const metadata = {
     site: '@situationcd',
     creator: '@situationcd',
     title: 'シチュエーションCDデータベース',
-    description: '女性向けシチュエーションCDの総合情報サイト。最新作品、人気声優、ジャンルから検索できます。',
+    description: '女性向けシチュエーションCDの総合情報サイト。最新作品、人気声優、タグから検索できます。',
     images: ['/og-image.jpg'],
   },
   robots: {
@@ -92,7 +92,7 @@ export default function RootLayout({ children }) {
         {/* X（Twitter）のクロールを促進するための追加メタタグ */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="シチュエーションCDデータベース" />
-        <meta name="twitter:description" content="女性向けシチュエーションCDの情報サイト。最新作品、人気声優、ジャンルから検索できます。" />
+        <meta name="twitter:description" content="女性向けシチュエーションCDの情報サイト。最新作品、人気声優、タグから検索できます。" />
         <meta name="twitter:image" content="https://situationcd.com/og-image.jpg" />
         
         {/* 追加のSEOメタタグ */}

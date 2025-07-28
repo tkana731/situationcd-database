@@ -78,9 +78,9 @@ const Header = () => {
                         <Users size={18} />
                         <span className="hidden md:inline">声優</span>
                     </Link>
-                    <Link href="/tags" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2" title="ジャンルタグ一覧">
+                    <Link href="/tags" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2" title="タグ一覧">
                         <Tag size={18} />
-                        <span className="hidden md:inline">ジャンル</span>
+                        <span className="hidden md:inline">タグ</span>
                     </Link>
                     <Link href="/blog" className="flex items-center gap-1 text-gray-600 hover:text-pink-600 transition-colors p-2" title="ブログ">
                         <BookOpen size={18} />
@@ -161,7 +161,7 @@ const Header = () => {
                                 </Link>
                                 <Link href="/tags" className="flex items-center gap-3 text-gray-600 hover:text-pink-600 transition-colors p-3 hover:bg-pink-50 rounded" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Tag size={20} />
-                                    <span>ジャンル</span>
+                                    <span>タグ</span>
                                 </Link>
                                 <Link href="/blog" className="flex items-center gap-3 text-gray-600 hover:text-pink-600 transition-colors p-3 hover:bg-pink-50 rounded" onClick={() => setIsMobileMenuOpen(false)}>
                                     <BookOpen size={20} />

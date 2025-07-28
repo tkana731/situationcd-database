@@ -17,7 +17,7 @@ export default function AboutPage() {
                             <h2 className="text-xl font-semibold text-pink-600 mb-4">シチュエーションCDデータベースとは</h2>
                             <p className="text-gray-700 leading-relaxed mb-4">
                                 シチュエーションCDデータベースは、女性向けシチュエーションCD・音声作品を検索・閲覧できる情報サイトです。
-                                最新作品の情報や人気声優、ジャンルタグなど、あなたの好みに合った作品を簡単に見つけることができます。
+                                最新作品の情報や人気声優、ジャンルなど、あなたの好みに合った作品を簡単に見つけることができます。
                             </p>
                             <p className="text-gray-700 leading-relaxed">
                                 当サイトは個人運営のファンサイトであり、各作品の著作権は制作会社・配信サイトに帰属します。

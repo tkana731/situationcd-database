@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Box, FileText } from 'lucide-react';
+import { Box, FileText, Heart, Info } from 'lucide-react';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import SearchBox from './components/ui/SearchBox';
@@ -58,6 +58,24 @@ export default function HomePage() {
             <main className="flex-grow">
                 <div className="container mx-auto px-4 py-8">
                     <SearchBox />
+                    
+                    {/* お気に入り機能の説明 */}
+                    <div className="mb-8 bg-pink-50 border border-pink-200 rounded-lg p-4">
+                        <div className="flex items-start">
+                            <Info className="text-pink-600 flex-shrink-0 mt-0.5 mr-2" size={20} />
+                            <div className="text-sm text-gray-700">
+                                <p className="leading-relaxed">
+                                    作品カードまたはタグ右上の
+                                    <Heart className="text-pink-500 inline-block mx-1 align-text-bottom" size={16} />
+                                    をクリックして「お気に入り」に登録すると、
+                                    <Link href="/wishlist" className="text-pink-600 font-medium hover:text-pink-700 underline inline-block">
+                                        お気に入りページ
+                                    </Link>
+                                    の下部に「あなたへのおすすめ」が表示されます
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
                     <div className="mb-12">
                         <h2 className="text-xl font-bold mb-6 flex items-center">

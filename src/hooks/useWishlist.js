@@ -5,7 +5,10 @@ import { useEffect, useState } from 'react';
 const WISHLIST_KEY = 'situationcd_wishlist';
 
 export const useWishlist = () => {
-  const [wishlist, setWishlist] = useState([]);
+  const [wishlistData, setWishlistData] = useState({
+    products: [],
+    tags: []
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -13,7 +16,19 @@ export const useWishlist = () => {
       try {
         const saved = localStorage.getItem(WISHLIST_KEY);
         if (saved) {
-          setWishlist(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          // 旧形式との互換性維持
+          if (Array.isArray(parsed)) {
+            setWishlistData({
+              products: parsed,
+              tags: []
+            });
+          } else {
+            setWishlistData({
+              products: parsed.products || [],
+              tags: parsed.tags || []
+            });
+          }
         }
       } catch (error) {
         console.error('Failed to load wishlist:', error);
@@ -25,19 +40,19 @@ export const useWishlist = () => {
     loadWishlist();
   }, []);
 
-  const saveWishlist = (items) => {
+  const saveWishlist = (data) => {
     try {
-      localStorage.setItem(WISHLIST_KEY, JSON.stringify(items));
-      setWishlist(items);
+      localStorage.setItem(WISHLIST_KEY, JSON.stringify(data));
+      setWishlistData(data);
     } catch (error) {
       console.error('Failed to save wishlist:', error);
     }
   };
 
   const addToWishlist = (product) => {
-    const newWishlist = [...wishlist];
-    if (!newWishlist.some(item => item.id === product.id)) {
-      newWishlist.push({
+    const newProducts = [...wishlistData.products];
+    if (!newProducts.some(item => item.id === product.id)) {
+      newProducts.push({
         id: product.id,
         title: product.title,
         maker: product.maker,
@@ -47,29 +62,76 @@ export const useWishlist = () => {
         tags: product.tags || [],
         cast: product.cast || []
       });
-      saveWishlist(newWishlist);
+      saveWishlist({
+        ...wishlistData,
+        products: newProducts
+      });
     }
   };
 
   const removeFromWishlist = (productId) => {
-    const newWishlist = wishlist.filter(item => item.id !== productId);
-    saveWishlist(newWishlist);
+    const newProducts = wishlistData.products.filter(item => item.id !== productId);
+    saveWishlist({
+      ...wishlistData,
+      products: newProducts
+    });
   };
 
   const isInWishlist = (productId) => {
-    return wishlist.some(item => item.id === productId);
+    return wishlistData.products.some(item => item.id === productId);
   };
 
   const clearWishlist = () => {
-    saveWishlist([]);
+    saveWishlist({
+      products: [],
+      tags: []
+    });
+  };
+
+  // タグ関連の関数
+  const addTagToWishlist = (tag) => {
+    if (!wishlistData.tags.includes(tag)) {
+      const newTags = [...wishlistData.tags, tag];
+      saveWishlist({
+        ...wishlistData,
+        tags: newTags
+      });
+    }
+  };
+
+  const removeTagFromWishlist = (tag) => {
+    const newTags = wishlistData.tags.filter(t => t !== tag);
+    saveWishlist({
+      ...wishlistData,
+      tags: newTags
+    });
+  };
+
+  const isTagInWishlist = (tag) => {
+    return wishlistData.tags.includes(tag);
+  };
+
+  const clearTags = () => {
+    saveWishlist({
+      ...wishlistData,
+      tags: []
+    });
   };
 
   return {
-    wishlist,
+    // 互換性のため wishlist プロパティも提供
+    wishlist: wishlistData.products,
+    wishlistData,
     isLoading,
+    // 作品関連
     addToWishlist,
     removeFromWishlist,
     isInWishlist,
-    clearWishlist
+    clearWishlist,
+    // タグ関連
+    addTagToWishlist,
+    removeTagFromWishlist,
+    isTagInWishlist,
+    clearTags
   };
 };

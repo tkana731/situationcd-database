@@ -45,7 +45,7 @@ export async function generateMetadata({ params }) {
         }
         description += 'を掲載しています。';
         
-        // タグ（ジャンル）を収集
+        // タグを収集
         const allTags = new Set();
         products.forEach(product => {
             if (product.tags && Array.isArray(product.tags)) {

@@ -10,6 +10,13 @@ const UpdateHistory = () => {
 
     const updates = [
         {
+            date: '2025-07-28',
+            version: 'v1.4.0',
+            title: 'タグのお気に入り機能追加',
+            description: 'タグをお気に入りに登録できる機能を追加しました。お気に入りに登録したタグに基づいて、より精度の高いおすすめ作品が表示されるようになりました。',
+            type: 'feature'
+        },
+        {
             date: '2025-06-15',
             version: 'v1.3.0',
             title: 'ブログ機能追加',

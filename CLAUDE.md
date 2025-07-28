@@ -70,7 +70,7 @@ The header contains the following navigation items (in order):
 - **ホーム** (Home) - `/`
 - **作品一覧** (Products) - `/products`
 - **声優** (Voice Actors) - `/actors`
-- **ジャンル** (Genres/Tags) - `/tags`
+- **タグ** (Tags) - `/tags`
 - **ブログ** (Blog) - `/blog`
 - **発売日** (Release Date) - Dropdown menu with `/years` and individual year pages
 - **お気に入り** (Wishlist) - `/wishlist`

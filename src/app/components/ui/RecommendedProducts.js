@@ -7,13 +7,13 @@ import { useWishlistContext } from '@/contexts/WishlistContext';
 import { getProductsByTags, getProductsByCast } from '@/lib/firebase/products';
 
 const RecommendedProducts = ({ currentProductId = null, excludeProductIds = [], limit = 6 }) => {
-    const { wishlist } = useWishlistContext();
+    const { wishlist, wishlistData } = useWishlistContext();
     const [recommendations, setRecommendations] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchRecommendations = async () => {
-            if (wishlist.length === 0) {
+            if (wishlist.length === 0 && wishlistData.tags.length === 0) {
                 setRecommendations([]);
                 setIsLoading(false);
                 return;
@@ -23,6 +23,11 @@ const RecommendedProducts = ({ currentProductId = null, excludeProductIds = [], 
                 // ウィッシュリストからタグと声優を収集
                 const tagCounts = {};
                 const castCounts = {};
+
+                // お気に入りタグを高い重みで追加
+                wishlistData.tags.forEach(tag => {
+                    tagCounts[tag] = (tagCounts[tag] || 0) + 5; // お気に入りタグは重み5
+                });
 
                 wishlist.forEach(item => {
                     // タグの集計
@@ -83,6 +88,10 @@ const RecommendedProducts = ({ currentProductId = null, excludeProductIds = [], 
                     if (product.tags) {
                         product.tags.forEach(tag => {
                             if (tagCounts[tag]) {
+                                // お気に入りタグとの一致はより高いスコア
+                                if (wishlistData.tags.includes(tag)) {
+                                    score += 10; // お気に入りタグとの直接一致
+                                }
                                 score += tagCounts[tag] * 2;
                             }
                         });
@@ -130,7 +139,7 @@ const RecommendedProducts = ({ currentProductId = null, excludeProductIds = [], 
         };
 
         fetchRecommendations();
-    }, [wishlist, currentProductId, excludeProductIds, limit]);
+    }, [wishlist, wishlistData, currentProductId, excludeProductIds, limit]);
 
     if (isLoading) {
         return (

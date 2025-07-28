@@ -11,14 +11,14 @@ export function generateMetadata() {
   return {
     ...rootMetadata,
     title: 'シチュエーションCDデータベース | 女性向けシチュエーションCD・音声作品の情報サイト',
-    description: '女性向けシチュエーションCDの情報サイト。最新作品、人気声優、ジャンルタグから好みの作品を簡単検索。',
+    description: '女性向けシチュエーションCDの情報サイト。最新作品、人気声優、タグから好みの作品を簡単検索。',
     alternates: {
       canonical: url,
     },
     openGraph: {
       ...rootMetadata.openGraph,
       title: 'シチュエーションCDデータベース',
-      description: '女性向けシチュエーションCDの情報サイト。最新作品、人気声優、ジャンルから検索できます。',
+      description: '女性向けシチュエーションCDの情報サイト。最新作品、人気声優、タグから検索できます。',
       url,
       images: [
         {
@@ -32,7 +32,7 @@ export function generateMetadata() {
     twitter: {
       card: 'summary_large_image',
       title: 'シチュエーションCDデータベース',
-      description: '女性向けシチュエーションCDの情報サイト。最新作品、人気声優、ジャンルから検索できます。',
+      description: '女性向けシチュエーションCDの情報サイト。最新作品、人気声優、タグから検索できます。',
       images: [ogImageUrl],
     }
   };
